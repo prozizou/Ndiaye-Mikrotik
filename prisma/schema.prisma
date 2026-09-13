@@ -45,6 +45,7 @@ model Utilisateur {
   ticketsAssignes      Ticket[]        @relation("TechnicienTickets")
   interventions        Intervention[]  @relation("TechnicienInterventions")
   journalAudit         JournalAudit[]
+  alertesAcquittees    Alerte[]
 
   @@index([clientId])
 }
@@ -120,6 +121,7 @@ model Routeur {
   diagnostics     Diagnostic[]
   interventions   Intervention[]
   journalAudit    JournalAudit[]
+  alertes         Alerte[]
   secret          RouteurSecret?
 
   @@index([siteId])
@@ -222,6 +224,54 @@ model Diagnostic {
 
   @@index([routeurId])
   @@index([ticketId])
+}
+
+// ---------------------------------------------------------------------------
+// Alertes
+// ---------------------------------------------------------------------------
+// Ouvertes/refermées par lancerDiagnostic() selon des seuils fixes (voir
+// lib/monitoring/seuils.ts) — il n'y a pas encore de supervision continue
+// (Phase 7 de la feuille de route) : une alerte n'apparaît ou ne se referme
+// qu'au prochain diagnostic lancé sur ce routeur, pas en temps réel.
+
+enum NiveauAlerte {
+  AVERTISSEMENT
+  CRITIQUE
+}
+
+enum TypeAlerte {
+  ROUTEUR_INJOIGNABLE
+  WAN_INDISPONIBLE
+  DNS_INSTABLE
+  CPU_ELEVE
+  LATENCE_ELEVEE
+}
+
+model Alerte {
+  id              String       @id @default(cuid())
+  routeur         Routeur      @relation(fields: [routeurId], references: [id], onDelete: Cascade)
+  routeurId       String
+
+  type            TypeAlerte
+  niveau          NiveauAlerte
+  message         String
+  // Valeur qui a déclenché le seuil (% CPU, ms de latence...) — contexte
+  // pour l'affichage, pas utilisée pour la logique elle-même.
+  valeurMesuree   Float?
+
+  creeLe          DateTime     @default(now())
+  // Refermée automatiquement quand la condition n'est plus vraie au
+  // diagnostic suivant — jamais par une action manuelle.
+  resolueLe       DateTime?
+
+  // Acquittement : un humain a vu l'alerte et la prend en charge, distinct
+  // de la résolution automatique de la condition sous-jacente.
+  acquitteePar    Utilisateur? @relation(fields: [acquitteeParId], references: [id])
+  acquitteeParId  String?
+  acquitteeLe     DateTime?
+
+  @@index([routeurId])
+  @@index([resolueLe])
 }
 
 // ---------------------------------------------------------------------------
