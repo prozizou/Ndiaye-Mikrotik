@@ -18,7 +18,7 @@ const HOTE_TEST_DNS = "google.com"; // si ça échoue alors que WAN est ok, le p
 const NOMBRE_PAQUETS = "4";
 
 type ResultatEtape = { ok: boolean; details?: string };
-type ResultatPing = ResultatEtape & { latenceMs?: number };
+type ResultatPing = ResultatEtape & { latenceMs?: number; perteWanPourcent?: number };
 
 export type ResultatDiagnostic = {
   routeurAccessible: ResultatEtape;
@@ -73,11 +73,13 @@ async function pingDepuisRouteur(
 
     const paquets = Array.isArray(resultats) ? resultats : [];
     const auMoinsUneReponse = paquets.some((p) => p.status === undefined);
+    const echecs = paquets.filter((p) => p.status !== undefined).length;
 
     return {
       ok: auMoinsUneReponse,
       details: `${paquets.length} paquet(s) envoyé(s) vers ${cible}`,
       latenceMs: extraireLatenceMoyenneMs(paquets),
+      perteWanPourcent: paquets.length > 0 ? (echecs / paquets.length) * 100 : undefined,
     };
   } catch (erreur) {
     return {
@@ -147,6 +149,8 @@ export async function lancerDiagnostic(
       pingOk: routeurAccessible.ok,
       wanOk: wan.ok,
       dnsOk: dns.ok,
+      latenceMs: wan.latenceMs,
+      perteWanPourcent: wan.perteWanPourcent,
       problemeProbable,
       severite,
     },

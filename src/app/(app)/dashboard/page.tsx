@@ -11,7 +11,7 @@ import Link from "next/link";
 import { NetworkMotif } from "@/components/layout/network-motif";
 import { prisma } from "@/lib/database/prisma";
 import { utilisateurConnecte } from "@/lib/permissions/permissions";
-import { AcquitterAlerteBouton } from "./acquitter-alerte-bouton";
+import { AcquitterAlerteBouton } from "@/components/alertes/acquitter-alerte-bouton";
 import type { StatutTicket, TypeAlerte } from "@prisma/client";
 
 const STATUT_LABEL: Record<StatutTicket, string> = {
