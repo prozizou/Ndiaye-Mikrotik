@@ -2,10 +2,15 @@
 // MVP : trois contrôles — le routeur répond-il ? le WAN sort-il ? le DNS
 // résout-il ? Suffisant pour couvrir la majorité des tickets "Internet coupé"
 // et poser la structure ; Wi-Fi/DHCP/Gateway s'ajouteront de la même façon.
+// Sert aussi de point d'entrée aux alertes automatiques (evaluerAlertes) :
+// tant qu'il n'y a pas de supervision continue (Phase 7), c'est le seul
+// moment où l'état du parc est vérifié.
 
 import { prisma } from "@/lib/database/prisma";
 import { appelerMikrotik } from "@/lib/mikrotik/client";
 import { recupererIdentifiantsMikrotik } from "@/lib/mikrotik/secrets";
+import { evaluerAlertes, type ConditionAlerte } from "./alerte.service";
+import { SEUIL_CPU_AVERTISSEMENT, SEUIL_LATENCE_AVERTISSEMENT_MS } from "@/lib/monitoring/seuils";
 import type { SeveriteDiagnostic } from "@prisma/client";
 
 const HOTE_TEST_WAN = "1.1.1.1"; // ping brut, sans résolution DNS
@@ -13,6 +18,7 @@ const HOTE_TEST_DNS = "google.com"; // si ça échoue alors que WAN est ok, le p
 const NOMBRE_PAQUETS = "4";
 
 type ResultatEtape = { ok: boolean; details?: string };
+type ResultatPing = ResultatEtape & { latenceMs?: number };
 
 export type ResultatDiagnostic = {
   routeurAccessible: ResultatEtape;
@@ -22,13 +28,43 @@ export type ResultatDiagnostic = {
   severite: SeveriteDiagnostic | null;
 };
 
-type PaquetPing = { status?: string };
+type PaquetPing = { status?: string; time?: string };
+
+// RouterOS renvoie les durées façon "1ms200us" / "12ms" / "500us" — on ne
+// garde que la précision milliseconde, suffisante pour un seuil d'alerte.
+// Format non garanti d'une version à l'autre : en cas de doute, on renvoie
+// null plutôt que de deviner (la latence est alors simplement ignorée).
+function parseDureeMs(valeur: string | undefined): number | null {
+  if (!valeur) return null;
+  const ms = valeur.match(/(\d+(?:\.\d+)?)ms/);
+  if (ms) return parseFloat(ms[1]);
+  const us = valeur.match(/(\d+(?:\.\d+)?)us/);
+  if (us) return parseFloat(us[1]) / 1000;
+  return null;
+}
+
+function extraireLatenceMoyenneMs(paquets: PaquetPing[]): number | undefined {
+  const temps = paquets.map((p) => parseDureeMs(p.time)).filter((v): v is number => v !== null);
+  if (temps.length === 0) return undefined;
+  return temps.reduce((a, b) => a + b, 0) / temps.length;
+}
+
+// cpu-load est un champ stable de /system/resource depuis longtemps sur
+// RouterOS — contrairement à uptime (formats trop variables d'une version à
+// l'autre) on ne tente pas de parser ram/uptime ici, remis à plus tard
+// (Phase 4) une fois testé contre un vrai routeur.
+function extraireCpuPourcent(ressource: unknown): number | undefined {
+  if (!ressource || typeof ressource !== "object") return undefined;
+  const valeur = (ressource as Record<string, unknown>)["cpu-load"];
+  const nombre = typeof valeur === "string" ? Number(valeur) : typeof valeur === "number" ? valeur : NaN;
+  return Number.isFinite(nombre) ? nombre : undefined;
+}
 
 async function pingDepuisRouteur(
   ipVpn: string,
   identifiants: { utilisateur: string; motDePasse: string },
   cible: string,
-): Promise<ResultatEtape> {
+): Promise<ResultatPing> {
   try {
     const resultats = (await appelerMikrotik(ipVpn, "/ping", identifiants, {
       methode: "POST",
@@ -41,6 +77,7 @@ async function pingDepuisRouteur(
     return {
       ok: auMoinsUneReponse,
       details: `${paquets.length} paquet(s) envoyé(s) vers ${cible}`,
+      latenceMs: extraireLatenceMoyenneMs(paquets),
     };
   } catch (erreur) {
     return {
@@ -79,9 +116,13 @@ export async function lancerDiagnostic(
 
   // Étape 1 : le routeur répond-il du tout (VPN + API REST) ?
   let routeurAccessible: ResultatEtape;
+  let cpuPourcent: number | undefined;
   try {
-    await appelerMikrotik(routeur.ipVpn, "/system/resource", identifiants, { timeoutMs: 5000 });
+    const ressource = await appelerMikrotik(routeur.ipVpn, "/system/resource", identifiants, {
+      timeoutMs: 5000,
+    });
     routeurAccessible = { ok: true };
+    cpuPourcent = extraireCpuPourcent(ressource);
   } catch (erreur) {
     routeurAccessible = {
       ok: false,
@@ -89,7 +130,7 @@ export async function lancerDiagnostic(
     };
   }
 
-  let wan: ResultatEtape = { ok: false, details: "Non testé — routeur injoignable" };
+  let wan: ResultatPing = { ok: false, details: "Non testé — routeur injoignable" };
   let dns: ResultatEtape = { ok: false, details: "Non testé — routeur injoignable" };
 
   if (routeurAccessible.ok) {
@@ -113,8 +154,48 @@ export async function lancerDiagnostic(
 
   await prisma.routeur.update({
     where: { id: routeur.id },
-    data: { enLigne: routeurAccessible.ok, derniereCommunication: new Date() },
+    data: {
+      enLigne: routeurAccessible.ok,
+      derniereCommunication: new Date(),
+      cpuPourcent,
+    },
   });
+
+  const conditions: ConditionAlerte[] = [
+    {
+      type: "ROUTEUR_INJOIGNABLE",
+      active: !routeurAccessible.ok,
+      niveau: "CRITIQUE",
+      message: "Routeur injoignable — VPN déconnecté ou routeur hors ligne",
+    },
+    {
+      type: "WAN_INDISPONIBLE",
+      active: routeurAccessible.ok && !wan.ok,
+      niveau: "CRITIQUE",
+      message: "Connexion WAN indisponible",
+    },
+    {
+      type: "DNS_INSTABLE",
+      active: routeurAccessible.ok && wan.ok && !dns.ok,
+      niveau: "AVERTISSEMENT",
+      message: "Résolution DNS instable",
+    },
+    {
+      type: "CPU_ELEVE",
+      active: cpuPourcent !== undefined && cpuPourcent > SEUIL_CPU_AVERTISSEMENT,
+      niveau: "AVERTISSEMENT",
+      message: `Charge CPU élevée (${cpuPourcent}%)`,
+      valeurMesuree: cpuPourcent,
+    },
+    {
+      type: "LATENCE_ELEVEE",
+      active: wan.latenceMs !== undefined && wan.latenceMs > SEUIL_LATENCE_AVERTISSEMENT_MS,
+      niveau: "AVERTISSEMENT",
+      message: `Latence WAN élevée (${wan.latenceMs?.toFixed(0)} ms)`,
+      valeurMesuree: wan.latenceMs,
+    },
+  ];
+  await evaluerAlertes(routeur.id, conditions);
 
   return { routeurAccessible, wan, dns, problemeProbable, severite };
 }

@@ -1,17 +1,18 @@
 // src/app/(app)/dashboard/page.tsx
-// Phase 2 : plus aucune donnée inventée. Tout vient de Prisma, filtré par
-// rôle comme le reste de l'app (CLIENT ne voit que son parc, TECHNICIEN ne
-// voit que ses propres tickets). Volontairement PAS de sélecteur de période
-// (24h/7j/30j) ni de courbe de disponibilité dans le temps : ça suppose un
-// historique de relevés qu'on n'a pas encore (voir Phase 7 — monitoring).
-// Ce qui EST réel ici : effectifs du parc, tickets créés/résolus, et une
-// section "À traiter maintenant" qui remplace les fausses "alertes".
+// Phase 3 : "À traiter maintenant" s'appuie désormais sur de vraies alertes
+// typées (table Alerte, ouvertes/refermées par lancerDiagnostic — voir
+// services/alerte.service.ts et diagnostic.service.ts), pas seulement sur
+// enLigne=false. Comme les alertes n'apparaissent qu'au diagnostic suivant
+// (pas de supervision continue — Phase 7), un routeur hors ligne mais
+// jamais diagnostiqué depuis n'aurait aucune alerte : on le garde donc en
+// repli, sans le compter deux fois s'il a déjà une alerte ouverte.
 
 import Link from "next/link";
 import { NetworkMotif } from "@/components/layout/network-motif";
 import { prisma } from "@/lib/database/prisma";
 import { utilisateurConnecte } from "@/lib/permissions/permissions";
-import type { StatutTicket } from "@prisma/client";
+import { AcquitterAlerteBouton } from "./acquitter-alerte-bouton";
+import type { StatutTicket, TypeAlerte } from "@prisma/client";
 
 const STATUT_LABEL: Record<StatutTicket, string> = {
   NOUVEAU: "Nouveau",
@@ -20,6 +21,14 @@ const STATUT_LABEL: Record<StatutTicket, string> = {
   INTERVENTION: "Intervention",
   RESOLU: "Résolu",
   FERME: "Fermé",
+};
+
+const TYPE_ALERTE_LABEL: Record<TypeAlerte, string> = {
+  ROUTEUR_INJOIGNABLE: "Hors ligne",
+  WAN_INDISPONIBLE: "WAN indisponible",
+  DNS_INSTABLE: "DNS instable",
+  CPU_ELEVE: "CPU élevé",
+  LATENCE_ELEVEE: "Latence élevée",
 };
 
 const SEPT_JOURS_MS = 7 * 24 * 60 * 60 * 1000;
@@ -69,8 +78,21 @@ function formatDuree(minutes: number): string {
   return `${(heures / 24).toFixed(1)} j`;
 }
 
+type ItemATraiter = {
+  cle: string;
+  href: string;
+  titre: string;
+  sousTitre: string;
+  badge: string;
+  detail: string;
+  urgent: boolean;
+  alerteId?: string;
+  acquitteeParNom?: string | null;
+};
+
 export default async function DashboardPage() {
   const utilisateur = await utilisateurConnecte();
+  const estStaff = utilisateur.role !== "CLIENT";
 
   const filtreRouteurs =
     utilisateur.role === "CLIENT" ? { site: { clientId: utilisateur.clientId! } } : undefined;
@@ -83,7 +105,7 @@ export default async function DashboardPage() {
 
   const depuis7Jours = new Date(Date.now() - SEPT_JOURS_MS);
 
-  const [routeurs, tickets] = await Promise.all([
+  const [routeurs, tickets, alertesOuvertes] = await Promise.all([
     prisma.routeur.findMany({
       where: filtreRouteurs,
       include: { site: { include: { client: { select: { nom: true } } } } },
@@ -93,6 +115,13 @@ export default async function DashboardPage() {
       where: filtreTickets,
       include: { client: { select: { nom: true } } },
       orderBy: { creeLe: "desc" },
+    }),
+    prisma.alerte.findMany({
+      where: { resolueLe: null, ...(filtreRouteurs ? { routeur: filtreRouteurs } : {}) },
+      include: {
+        routeur: { include: { site: { include: { client: { select: { nom: true } } } } } },
+        acquitteePar: { select: { nom: true } },
+      },
     }),
   ]);
 
@@ -120,8 +149,30 @@ export default async function DashboardPage() {
       ? dureesResolution.reduce((a, b) => a + b, 0) / dureesResolution.length
       : null;
 
-  const aTraiter = [
-    ...routeursHorsLigne.map((r) => ({
+  const alertesTriees = [...alertesOuvertes].sort((a, b) => {
+    if (a.niveau !== b.niveau) return a.niveau === "CRITIQUE" ? -1 : 1;
+    return a.creeLe.getTime() - b.creeLe.getTime();
+  });
+
+  // Un routeur hors ligne mais jamais re-diagnostiqué depuis n'a pas encore
+  // d'alerte ROUTEUR_INJOIGNABLE — on le garde en repli pour ne rien passer
+  // sous silence, sans le doubler s'il a déjà une alerte ouverte.
+  const routeurIdsAvecAlerte = new Set(alertesOuvertes.map((a) => a.routeurId));
+  const routeursHorsLigneSansAlerte = routeursHorsLigne.filter((r) => !routeurIdsAvecAlerte.has(r.id));
+
+  const aTraiter: ItemATraiter[] = [
+    ...alertesTriees.map((a) => ({
+      cle: `alerte-${a.id}`,
+      href: `/routeurs/${a.routeurId}`,
+      titre: a.routeur.nom,
+      sousTitre: `${a.routeur.site.client.nom} — ${a.routeur.site.nom}`,
+      badge: TYPE_ALERTE_LABEL[a.type],
+      detail: `depuis ${formatDepuis(a.creeLe)}`,
+      urgent: a.niveau === "CRITIQUE",
+      alerteId: a.id,
+      acquitteeParNom: a.acquitteePar?.nom ?? null,
+    })),
+    ...routeursHorsLigneSansAlerte.map((r) => ({
       cle: `routeur-${r.id}`,
       href: `/routeurs/${r.id}`,
       titre: r.nom,
@@ -175,19 +226,17 @@ export default async function DashboardPage() {
           <h2 className="mb-3 text-sm text-ink-muted">À traiter maintenant</h2>
           <div className="divide-y divide-border/70 border border-border/70 bg-surface">
             {aTraiter.map((item) => (
-              <Link
-                key={item.cle}
-                href={item.href}
-                className="flex items-center justify-between gap-4 px-4 py-3 hover:bg-surface-raised"
-              >
-                <div className="flex items-center gap-3">
-                  <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${item.urgent ? "bg-critical" : "bg-warning"}`} />
-                  <div>
-                    <div className="text-sm text-ink">{item.titre}</div>
-                    <div className="text-xs text-ink-muted">{item.sousTitre}</div>
+              <div key={item.cle} className="flex items-center justify-between gap-4 px-4 py-3 hover:bg-surface-raised">
+                <Link href={item.href} className="flex min-w-0 items-center gap-3">
+                  <span
+                    className={`h-1.5 w-1.5 shrink-0 rounded-full ${item.urgent ? "bg-critical" : "bg-warning"}`}
+                  />
+                  <div className="min-w-0">
+                    <div className="truncate text-sm text-ink">{item.titre}</div>
+                    <div className="truncate text-xs text-ink-muted">{item.sousTitre}</div>
                   </div>
-                </div>
-                <div className="text-right">
+                </Link>
+                <div className="flex shrink-0 flex-col items-end gap-1">
                   <span
                     className={`rounded-sm border px-1.5 py-0.5 text-[10px] ${
                       item.urgent ? "border-critical/30 text-critical" : "border-warning/30 text-warning"
@@ -195,9 +244,16 @@ export default async function DashboardPage() {
                   >
                     {item.badge}
                   </span>
-                  <div className="mt-1 text-[11px] text-ink-faint">{item.detail}</div>
+                  <div className="text-[11px] text-ink-faint">{item.detail}</div>
+                  {item.alerteId &&
+                    estStaff &&
+                    (item.acquitteeParNom ? (
+                      <span className="text-[10px] text-ink-faint">Acquittée par {item.acquitteeParNom}</span>
+                    ) : (
+                      <AcquitterAlerteBouton alerteId={item.alerteId} />
+                    ))}
                 </div>
-              </Link>
+              </div>
             ))}
             {aTraiter.length === 0 && (
               <p className="px-4 py-6 text-sm text-ink-muted">
