@@ -216,6 +216,10 @@ model Diagnostic {
   pingOk        Boolean?
   dnsOk         Boolean?
   wanOk         Boolean?
+  // Mesurés sur le ping WAN de ce diagnostic — null si le format de
+  // réponse RouterOS n'a pas pu être interprété (voir diagnostic.service.ts).
+  latenceMs         Float?
+  perteWanPourcent  Float?
 
   problemeProbable String?
   severite      SeveriteDiagnostic?

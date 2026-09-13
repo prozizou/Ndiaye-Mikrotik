@@ -1,4 +1,6 @@
-// src/app/(app)/dashboard/acquitter-alerte-bouton.tsx
+// src/components/alertes/acquitter-alerte-bouton.tsx
+// Utilisé sur le dashboard et sur la fiche routeur — même bouton, même
+// endpoint (POST /api/alertes/[id]/acquitter).
 "use client";
 
 import { useState } from "react";

@@ -3,8 +3,18 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/database/prisma";
 import { utilisateurConnecte, exigerAccesClient, ErreurAcces } from "@/lib/permissions/permissions";
+import { AcquitterAlerteBouton } from "@/components/alertes/acquitter-alerte-bouton";
 import { BoutonDiagnostic } from "./bouton-diagnostic";
 import { BoutonsIntervention } from "./boutons-intervention";
+import type { TypeAlerte } from "@prisma/client";
+
+const TYPE_ALERTE_LABEL: Record<TypeAlerte, string> = {
+  ROUTEUR_INJOIGNABLE: "Routeur injoignable",
+  WAN_INDISPONIBLE: "WAN indisponible",
+  DNS_INSTABLE: "DNS instable",
+  CPU_ELEVE: "CPU élevé",
+  LATENCE_ELEVEE: "Latence élevée",
+};
 
 export default async function PageDetailRouteur({ params }: { params: { id: string } }) {
   const utilisateur = await utilisateurConnecte();
@@ -16,6 +26,7 @@ export default async function PageDetailRouteur({ params }: { params: { id: stri
       diagnostics: { orderBy: { lanceLe: "desc" }, take: 10 },
       interventions: { orderBy: { demarreeLe: "desc" }, take: 10 },
       tickets: { orderBy: { creeLe: "desc" }, take: 5 },
+      alertes: { where: { resolueLe: null }, include: { acquitteePar: { select: { nom: true } } } },
     },
   });
 
@@ -31,6 +42,10 @@ export default async function PageDetailRouteur({ params }: { params: { id: stri
   }
 
   const peutIntervenir = ["SUPER_ADMIN", "ADMINISTRATEUR", "TECHNICIEN"].includes(utilisateur.role);
+  const estStaff = utilisateur.role !== "CLIENT";
+  // Latence/perte WAN : mesurées au dernier diagnostic, pas en continu (pas
+  // de supervision temps réel — voir Phase 7 de la feuille de route).
+  const dernierDiagnostic = routeur.diagnostics[0];
 
   return (
     <div className="mx-auto max-w-2xl space-y-6 p-4">
@@ -60,7 +75,55 @@ export default async function PageDetailRouteur({ params }: { params: { id: stri
               : "jamais"
           }
         />
+        <Champ
+          label="CPU (dernier diagnostic)"
+          valeur={routeur.cpuPourcent !== null ? `${routeur.cpuPourcent}%` : "—"}
+          mono
+        />
+        <Champ
+          label="Latence WAN"
+          valeur={dernierDiagnostic?.latenceMs != null ? `${dernierDiagnostic.latenceMs.toFixed(0)} ms` : "—"}
+          mono
+        />
+        <Champ
+          label="Perte de paquets WAN"
+          valeur={
+            dernierDiagnostic?.perteWanPourcent != null
+              ? `${dernierDiagnostic.perteWanPourcent.toFixed(0)}%`
+              : "—"
+          }
+          mono
+        />
       </div>
+
+      {routeur.alertes.length > 0 && (
+        <section>
+          <h2 className="mb-2 text-sm text-ink-muted">Alertes ouvertes</h2>
+          <div className="divide-y divide-border/70 border border-border/70 bg-surface">
+            {routeur.alertes.map((a) => (
+              <div key={a.id} className="flex items-center justify-between gap-4 px-4 py-3">
+                <div>
+                  <span
+                    className={`rounded-sm border px-1.5 py-0.5 text-[10px] ${
+                      a.niveau === "CRITIQUE" ? "border-critical/30 text-critical" : "border-warning/30 text-warning"
+                    }`}
+                  >
+                    {TYPE_ALERTE_LABEL[a.type]}
+                  </span>
+                  <p className="mt-1 text-sm text-ink">{a.message}</p>
+                  <p className="text-xs text-ink-muted">Depuis le {a.creeLe.toLocaleString("fr-FR")}</p>
+                </div>
+                {estStaff &&
+                  (a.acquitteePar ? (
+                    <span className="shrink-0 text-xs text-ink-faint">Acquittée par {a.acquitteePar.nom}</span>
+                  ) : (
+                    <AcquitterAlerteBouton alerteId={a.id} />
+                  ))}
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {peutIntervenir && (
         <div className="space-y-3">
