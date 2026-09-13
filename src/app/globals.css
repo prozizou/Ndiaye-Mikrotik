@@ -13,7 +13,10 @@
 
   --color-text: #edf2f6;
   --color-text-muted: #8c99a8;
-  --color-text-faint: #5c6b7a;
+  /* Relevé de #5c6b7a : sous ~3.4:1 sur --color-bg, en dessous du seuil AA
+     (4.5:1) pour du texte normal — durées et infos secondaires devenaient
+     illisibles. #76869a tient ~5:1. */
+  --color-text-faint: #76869a;
 
   --color-brand: #6c7bf5;
   --color-brand-strong: #8592f7;

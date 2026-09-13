@@ -105,29 +105,33 @@ export default function DashboardPage() {
   return (
     <div>
       {/* En-tête avec le motif réseau en filigrane */}
-      <div className="relative overflow-hidden border-b border-border px-6 py-8 md:px-10 md:py-12">
+      <div className="relative overflow-hidden border-b border-border/70 px-6 py-8 md:px-10 md:py-12">
         <NetworkMotif className="pointer-events-none absolute -right-10 -top-6 h-40 w-[420px] text-border-strong opacity-60 md:h-48 md:w-[520px]" />
         <div className="relative">
           <p className="text-sm text-ink-muted">Vue d&apos;ensemble</p>
           <h1 className="mt-1 font-display text-2xl font-semibold tracking-tight md:text-3xl">
             Centre d&apos;assistance
           </h1>
-          <div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-2 font-mono text-[13px]">
+          <div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-2 text-[13px]">
             <span className="flex items-center gap-2 text-signal">
-              <Pastille etat="en_ligne" /> {enLigne} en ligne
+              <Pastille etat="en_ligne" /> <span className="font-mono">{enLigne}</span> en ligne
             </span>
             <span className="flex items-center gap-2 text-critical">
-              <Pastille etat="hors_ligne" /> {horsLigne} hors ligne
+              <Pastille etat="hors_ligne" /> <span className="font-mono">{horsLigne}</span> hors ligne
             </span>
-            <span className="text-warning">{ALERTES.length} alertes</span>
-            <span className="text-ink-muted">{TICKETS.length} tickets ouverts</span>
+            <span className="text-warning">
+              <span className="font-mono">{ALERTES.length}</span> alertes
+            </span>
+            <span className="text-ink-muted">
+              <span className="font-mono">{TICKETS.length}</span> tickets ouverts
+            </span>
           </div>
         </div>
       </div>
 
       <div className="mx-auto max-w-4xl space-y-8 px-6 py-8 md:px-10">
         {/* Disponibilité — métrique héro */}
-        <section className="border border-border bg-surface p-5">
+        <section className="border border-border/70 bg-surface p-5">
           <div className="flex items-end justify-between">
             <span className="text-sm text-ink-muted">Disponibilité du parc</span>
             <span className="font-display text-3xl font-semibold text-signal">{disponibilite}%</span>
@@ -139,14 +143,14 @@ export default function DashboardPage() {
 
         {/* KPI */}
         <section className="grid grid-cols-2 gap-4">
-          <div className="border border-border bg-surface p-4">
+          <div className="border border-border/70 bg-surface p-4">
             <div className="flex items-baseline justify-between">
               <span className="text-xs text-ink-muted">Résolution moy.</span>
               <span className="font-mono text-sm">{KPI_RESOLUTION.at(-1)} min</span>
             </div>
             <Sparkline values={KPI_RESOLUTION} couleur="var(--color-signal)" />
           </div>
-          <div className="border border-border bg-surface p-4">
+          <div className="border border-border/70 bg-surface p-4">
             <div className="flex items-baseline justify-between">
               <span className="text-xs text-ink-muted">Incidents / jour</span>
               <span className="font-mono text-sm">{KPI_INCIDENTS.at(-1)}</span>
@@ -158,7 +162,7 @@ export default function DashboardPage() {
         {/* Routeurs à surveiller */}
         <section>
           <h2 className="mb-3 text-sm text-ink-muted">Routeurs à surveiller</h2>
-          <div className="divide-y divide-border border border-border bg-surface">
+          <div className="divide-y divide-border/70 border border-border/70 bg-surface">
             {ROUTEURS.map((r) => (
               <div key={r.id} className="flex items-center justify-between px-4 py-3">
                 <div className="flex items-center gap-3">
@@ -170,7 +174,9 @@ export default function DashboardPage() {
                 </div>
                 <div className="text-right">
                   <div className="font-mono text-xs text-ink-muted">{r.id}</div>
-                  <div className="font-mono text-[11px] text-ink-faint">depuis {r.depuis}</div>
+                  <div className="text-[11px] text-ink-faint">
+                    depuis <span className="font-mono">{r.depuis}</span>
+                  </div>
                 </div>
               </div>
             ))}
@@ -180,13 +186,13 @@ export default function DashboardPage() {
         {/* Alertes récentes */}
         <section>
           <h2 className="mb-3 text-sm text-ink-muted">Alertes récentes</h2>
-          <div className="divide-y divide-border border border-border bg-surface">
+          <div className="divide-y divide-border/70 border border-border/70 bg-surface">
             {ALERTES.map((a) => (
               <div key={a.id} className="flex items-start justify-between gap-4 px-4 py-3">
                 <div>
                   <div className="text-sm">{a.message}</div>
-                  <div className="mt-1 font-mono text-[11px] text-ink-faint">
-                    {a.routeur} · {a.client}
+                  <div className="mt-1 text-[11px] text-ink-faint">
+                    <span className="font-mono">{a.routeur}</span> · {a.client}
                   </div>
                 </div>
                 <div className="flex shrink-0 flex-col items-end gap-1.5">
@@ -203,18 +209,18 @@ export default function DashboardPage() {
         {/* Tickets ouverts */}
         <section className="pb-6">
           <h2 className="mb-3 text-sm text-ink-muted">Tickets ouverts</h2>
-          <div className="divide-y divide-border border border-border bg-surface">
+          <div className="divide-y divide-border/70 border border-border/70 bg-surface">
             {TICKETS.map((t) => (
               <div key={t.id} className="flex items-center justify-between px-4 py-3">
                 <div>
                   <div className="text-sm">{t.sujet}</div>
-                  <div className="mt-1 font-mono text-[11px] text-ink-faint">
-                    {t.id} · {t.client}
+                  <div className="mt-1 text-[11px] text-ink-faint">
+                    <span className="font-mono">{t.id}</span> · {t.client}
                   </div>
                 </div>
                 <div className="text-right">
                   <div className="text-xs text-warning">{STATUT_LABEL[t.statut]}</div>
-                  <div className="font-mono text-[11px] text-ink-faint">
+                  <div className="text-[11px] text-ink-faint">
                     {t.technicien ?? "non assigné"}
                   </div>
                 </div>
