@@ -6,7 +6,10 @@
 import { PrismaClient } from "@prisma/client";
 import { authAdmin } from "../src/lib/firebase/admin";
 
-const prisma = new PrismaClient();
+// Connexion directe (DIRECT_URL), pas Accelerate : un script d'admin ponctuel
+// n'a rien à gagner au pooling/cache, et évite de dépendre de l'extension
+// Accelerate ici. Voir src/lib/database/prisma.ts pour le client applicatif.
+const prisma = new PrismaClient({ datasourceUrl: process.env.DIRECT_URL });
 
 // Mot de passe temporaire — à changer dès la première connexion.
 const MOT_DE_PASSE_TEMPORAIRE = "ChangeMoi123!";
