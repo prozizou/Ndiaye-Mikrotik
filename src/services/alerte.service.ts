@@ -1,9 +1,10 @@
 // src/services/alerte.service.ts
 // Ouvre/referme les alertes selon les seuils fixes (lib/monitoring/seuils.ts),
 // à partir des résultats du diagnostic le plus récent — voir
-// diagnostic.service.ts pour l'appelant. Au plus une alerte "ouverte"
-// (resolueLe = null) par (routeurId, type) : si la condition est encore
-// vraie, on ne duplique pas ; si elle ne l'est plus, on referme.
+// diagnostic.service.ts pour l'appelant, déclenché à la main ou
+// périodiquement (Phase 7, /api/cron/diagnostics). Au plus une alerte
+// "ouverte" (resolueLe = null) par (routeurId, type) : si la condition est
+// encore vraie, on ne duplique pas ; si elle ne l'est plus, on referme.
 
 import { prisma } from "@/lib/database/prisma";
 import { enregistrerAudit } from "@/lib/audit/journal.service";
