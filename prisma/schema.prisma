@@ -7,7 +7,13 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  // DATABASE_URL : chaîne Accelerate (prisma+postgres://...) utilisée par
+  // l'appli à l'exécution — passe par le pooling/cache géré par Prisma.
+  // DIRECT_URL : connexion Postgres directe, utilisée uniquement par le CLI
+  // (migrate, db push, studio) car Accelerate ne peut pas exécuter de
+  // migrations. Voir .env.example.
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 // ---------------------------------------------------------------------------
