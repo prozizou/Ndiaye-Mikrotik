@@ -1,73 +1,57 @@
 // src/app/(app)/dashboard/page.tsx
+// Phase 2 : plus aucune donnée inventée. Tout vient de Prisma, filtré par
+// rôle comme le reste de l'app (CLIENT ne voit que son parc, TECHNICIEN ne
+// voit que ses propres tickets). Volontairement PAS de sélecteur de période
+// (24h/7j/30j) ni de courbe de disponibilité dans le temps : ça suppose un
+// historique de relevés qu'on n'a pas encore (voir Phase 7 — monitoring).
+// Ce qui EST réel ici : effectifs du parc, tickets créés/résolus, et une
+// section "À traiter maintenant" qui remplace les fausses "alertes".
 
+import Link from "next/link";
 import { NetworkMotif } from "@/components/layout/network-motif";
+import { prisma } from "@/lib/database/prisma";
+import { utilisateurConnecte } from "@/lib/permissions/permissions";
+import type { StatutTicket } from "@prisma/client";
 
-type EtatRouteur = "en_ligne" | "hors_ligne" | "alerte";
-
-type Routeur = {
-  id: string;
-  nom: string;
-  client: string;
-  etat: EtatRouteur;
-  depuis: string;
+const STATUT_LABEL: Record<StatutTicket, string> = {
+  NOUVEAU: "Nouveau",
+  ASSIGNE: "Assigné",
+  DIAGNOSTIC: "Diagnostic",
+  INTERVENTION: "Intervention",
+  RESOLU: "Résolu",
+  FERME: "Fermé",
 };
 
-type Alerte = {
-  id: string;
-  routeur: string;
-  client: string;
-  message: string;
-  severite: "critique" | "moyenne" | "faible";
-  heure: string;
-};
+const SEPT_JOURS_MS = 7 * 24 * 60 * 60 * 1000;
 
-type Ticket = {
-  id: string;
-  client: string;
-  sujet: string;
-  statut: "nouveau" | "assigne" | "diagnostic" | "intervention";
-  technicien: string | null;
-};
+function formatDepuis(date: Date | null): string {
+  if (!date) return "jamais";
+  const minutes = Math.floor((Date.now() - date.getTime()) / 60000);
+  if (minutes < 1) return "à l'instant";
+  if (minutes < 60) return `${minutes} min`;
+  const heures = Math.floor(minutes / 60);
+  if (heures < 24) return `${heures} h`;
+  return `${Math.floor(heures / 24)} j`;
+}
 
-const ROUTEURS: Routeur[] = [
-  { id: "MT-014", nom: "Siège — R1", client: "Sarl Kanté BTP", etat: "hors_ligne", depuis: "18 min" },
-  { id: "MT-071", nom: "Entrepôt Nord", client: "Quinca Diallo", etat: "alerte", depuis: "2 h" },
-  { id: "MT-102", nom: "Agence Plateau", client: "École Les Flamboyants", etat: "hors_ligne", depuis: "3 h" },
-];
-
-const ALERTES: Alerte[] = [
-  { id: "a1", routeur: "MT-071", client: "Quinca Diallo", message: "CPU au dessus de 85 % depuis 20 min", severite: "moyenne", heure: "15:22" },
-  { id: "a2", routeur: "MT-014", client: "Sarl Kanté BTP", message: "WAN indisponible — perte du lien FAI", severite: "critique", heure: "15:41" },
-  { id: "a3", routeur: "MT-102", client: "École Les Flamboyants", message: "VPN déconnecté", severite: "critique", heure: "12:58" },
-  { id: "a4", routeur: "MT-039", client: "Sarl Kanté BTP", message: "Résolution DNS instable", severite: "faible", heure: "09:03" },
-];
-
-const TICKETS: Ticket[] = [
-  { id: "T-2231", client: "École Les Flamboyants", sujet: "Wi-Fi inaccessible salle des profs", statut: "diagnostic", technicien: "S. Traoré" },
-  { id: "T-2230", client: "Quinca Diallo", sujet: "Internet lent en fin de journée", statut: "assigne", technicien: "A. Koné" },
-  { id: "T-2228", client: "Sarl Kanté BTP", sujet: "Coupure Internet totale", statut: "nouveau", technicien: null },
-];
-
-const KPI_RESOLUTION = [38, 42, 35, 51, 29, 33, 27];
-const KPI_INCIDENTS = [4, 6, 3, 8, 5, 2, 3];
-
-function Pastille({ etat }: { etat: EtatRouteur }) {
-  const couleurs: Record<EtatRouteur, string> = {
-    en_ligne: "bg-signal",
-    hors_ligne: "bg-critical",
-    alerte: "bg-warning",
-  };
-  return <span className={`inline-block h-1.5 w-1.5 rounded-full ${couleurs[etat]}`} />;
+// Répartit une liste de dates dans N compartiments quotidiens, le dernier
+// représentant aujourd'hui — sert à la courbe "tickets créés / jour".
+function serieParJour(dates: Date[], jours: number): number[] {
+  const compartiments = new Array(jours).fill(0);
+  for (const date of dates) {
+    const diffJours = Math.floor((Date.now() - date.getTime()) / (24 * 60 * 60 * 1000));
+    const index = jours - 1 - diffJours;
+    if (index >= 0 && index < jours) compartiments[index]++;
+  }
+  return compartiments;
 }
 
 function Sparkline({ values, couleur }: { values: number[]; couleur: string }) {
-  const max = Math.max(...values);
-  const min = Math.min(...values);
-  const range = max - min || 1;
+  const max = Math.max(...values, 1);
   const points = values
     .map((v, i) => {
-      const x = (i / (values.length - 1)) * 100;
-      const y = 30 - ((v - min) / range) * 24 - 3;
+      const x = (i / (values.length - 1 || 1)) * 100;
+      const y = 30 - (v / max) * 24 - 3;
       return `${x},${y}`;
     })
     .join(" ");
@@ -78,29 +62,84 @@ function Sparkline({ values, couleur }: { values: number[]; couleur: string }) {
   );
 }
 
-const SEVERITE_LABEL: Record<Alerte["severite"], string> = {
-  critique: "Critique",
-  moyenne: "Moyenne",
-  faible: "Faible",
-};
+function formatDuree(minutes: number): string {
+  if (minutes < 60) return `${Math.round(minutes)} min`;
+  const heures = minutes / 60;
+  if (heures < 24) return `${heures.toFixed(1)} h`;
+  return `${(heures / 24).toFixed(1)} j`;
+}
 
-const SEVERITE_STYLE: Record<Alerte["severite"], string> = {
-  critique: "text-critical border-critical/30",
-  moyenne: "text-warning border-warning/30",
-  faible: "text-ink-faint border-border-strong",
-};
+export default async function DashboardPage() {
+  const utilisateur = await utilisateurConnecte();
 
-const STATUT_LABEL: Record<Ticket["statut"], string> = {
-  nouveau: "Nouveau",
-  assigne: "Assigné",
-  diagnostic: "Diagnostic",
-  intervention: "Intervention",
-};
+  const filtreRouteurs =
+    utilisateur.role === "CLIENT" ? { site: { clientId: utilisateur.clientId! } } : undefined;
+  const filtreTickets =
+    utilisateur.role === "CLIENT"
+      ? { clientId: utilisateur.clientId! }
+      : utilisateur.role === "TECHNICIEN"
+        ? { technicienId: utilisateur.id }
+        : undefined;
 
-export default function DashboardPage() {
-  const enLigne = 125;
-  const horsLigne = 7;
-  const disponibilite = 96.4;
+  const depuis7Jours = new Date(Date.now() - SEPT_JOURS_MS);
+
+  const [routeurs, tickets] = await Promise.all([
+    prisma.routeur.findMany({
+      where: filtreRouteurs,
+      include: { site: { include: { client: { select: { nom: true } } } } },
+      orderBy: { nom: "asc" },
+    }),
+    prisma.ticket.findMany({
+      where: filtreTickets,
+      include: { client: { select: { nom: true } } },
+      orderBy: { creeLe: "desc" },
+    }),
+  ]);
+
+  const totalRouteurs = routeurs.length;
+  const routeursEnLigne = routeurs.filter((r) => r.enLigne);
+  const routeursHorsLigne = routeurs.filter((r) => !r.enLigne);
+  const disponibilite = totalRouteurs > 0 ? (routeursEnLigne.length / totalRouteurs) * 100 : null;
+
+  const ticketsOuverts = tickets.filter((t) => t.statut !== "FERME");
+  const ticketsATraiter = ticketsOuverts
+    .filter((t) => t.statut === "NOUVEAU" || t.statut === "ASSIGNE")
+    .sort((a, b) => a.creeLe.getTime() - b.creeLe.getTime());
+
+  const ticketsCreesRecents = tickets.filter((t) => t.creeLe >= depuis7Jours);
+  const serieTickets = serieParJour(
+    ticketsCreesRecents.map((t) => t.creeLe),
+    7,
+  );
+
+  const dureesResolution = tickets
+    .filter((t) => t.resoluLe && t.resoluLe >= depuis7Jours)
+    .map((t) => (t.resoluLe!.getTime() - t.creeLe.getTime()) / 60000);
+  const resolutionMoyenne =
+    dureesResolution.length > 0
+      ? dureesResolution.reduce((a, b) => a + b, 0) / dureesResolution.length
+      : null;
+
+  const aTraiter = [
+    ...routeursHorsLigne.map((r) => ({
+      cle: `routeur-${r.id}`,
+      href: `/routeurs/${r.id}`,
+      titre: r.nom,
+      sousTitre: `${r.site.client.nom} — ${r.site.nom}`,
+      badge: "Hors ligne",
+      detail: `depuis ${formatDepuis(r.derniereCommunication)}`,
+      urgent: true,
+    })),
+    ...ticketsATraiter.map((t) => ({
+      cle: `ticket-${t.id}`,
+      href: `/tickets/${t.id}`,
+      titre: t.sujet,
+      sousTitre: `${t.numero} · ${t.client.nom}`,
+      badge: STATUT_LABEL[t.statut],
+      detail: `depuis ${formatDepuis(t.creeLe)}`,
+      urgent: t.statut === "NOUVEAU",
+    })),
+  ];
 
   return (
     <div>
@@ -113,122 +152,139 @@ export default function DashboardPage() {
             Centre d&apos;assistance
           </h1>
           <div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-2 text-[13px]">
+            <span className="text-ink-muted">
+              <span className="font-mono">{totalRouteurs}</span> routeurs
+            </span>
             <span className="flex items-center gap-2 text-signal">
-              <Pastille etat="en_ligne" /> <span className="font-mono">{enLigne}</span> en ligne
+              <Pastille couleur="bg-signal" /> <span className="font-mono">{routeursEnLigne.length}</span> en ligne
             </span>
             <span className="flex items-center gap-2 text-critical">
-              <Pastille etat="hors_ligne" /> <span className="font-mono">{horsLigne}</span> hors ligne
-            </span>
-            <span className="text-warning">
-              <span className="font-mono">{ALERTES.length}</span> alertes
+              <Pastille couleur="bg-critical" /> <span className="font-mono">{routeursHorsLigne.length}</span> hors
+              ligne
             </span>
             <span className="text-ink-muted">
-              <span className="font-mono">{TICKETS.length}</span> tickets ouverts
+              <span className="font-mono">{ticketsOuverts.length}</span> tickets ouverts
             </span>
           </div>
         </div>
       </div>
 
       <div className="mx-auto max-w-4xl space-y-8 px-6 py-8 md:px-10">
+        {/* À traiter maintenant — avant toute statistique secondaire */}
+        <section>
+          <h2 className="mb-3 text-sm text-ink-muted">À traiter maintenant</h2>
+          <div className="divide-y divide-border/70 border border-border/70 bg-surface">
+            {aTraiter.map((item) => (
+              <Link
+                key={item.cle}
+                href={item.href}
+                className="flex items-center justify-between gap-4 px-4 py-3 hover:bg-surface-raised"
+              >
+                <div className="flex items-center gap-3">
+                  <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${item.urgent ? "bg-critical" : "bg-warning"}`} />
+                  <div>
+                    <div className="text-sm text-ink">{item.titre}</div>
+                    <div className="text-xs text-ink-muted">{item.sousTitre}</div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <span
+                    className={`rounded-sm border px-1.5 py-0.5 text-[10px] ${
+                      item.urgent ? "border-critical/30 text-critical" : "border-warning/30 text-warning"
+                    }`}
+                  >
+                    {item.badge}
+                  </span>
+                  <div className="mt-1 text-[11px] text-ink-faint">{item.detail}</div>
+                </div>
+              </Link>
+            ))}
+            {aTraiter.length === 0 && (
+              <p className="px-4 py-6 text-sm text-ink-muted">
+                Rien à traiter pour l&apos;instant — tout le parc est en ligne et aucun ticket n&apos;attend
+                d&apos;affectation.
+              </p>
+            )}
+          </div>
+        </section>
+
         {/* Disponibilité — métrique héro */}
         <section className="border border-border/70 bg-surface p-5">
           <div className="flex items-end justify-between">
             <span className="text-sm text-ink-muted">Disponibilité du parc</span>
-            <span className="font-display text-3xl font-semibold text-signal">{disponibilite}%</span>
+            {disponibilite !== null ? (
+              <span className="font-display text-3xl font-semibold text-signal">
+                {disponibilite.toFixed(1)}%
+              </span>
+            ) : (
+              <span className="text-sm text-ink-faint">Aucun routeur enregistré</span>
+            )}
           </div>
           <div className="mt-3 h-1 w-full overflow-hidden rounded-full bg-border">
-            <div className="h-full rounded-full bg-signal" style={{ width: `${disponibilite}%` }} />
+            <div
+              className="h-full rounded-full bg-signal"
+              style={{ width: `${disponibilite ?? 0}%` }}
+            />
           </div>
         </section>
 
-        {/* KPI */}
-        <section className="grid grid-cols-2 gap-4">
+        {/* KPI — pas de sélecteur de période : il faudrait un historique de
+            relevés qu'on n'a pas encore (voir Phase 7). */}
+        <section className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="border border-border/70 bg-surface p-4">
+            <span className="text-xs text-ink-muted">Résolution moyenne (7 j)</span>
+            <div className="mt-1 font-display text-xl font-semibold text-ink">
+              {resolutionMoyenne !== null ? formatDuree(resolutionMoyenne) : "—"}
+            </div>
+            <div className="text-[11px] text-ink-faint">
+              {dureesResolution.length > 0
+                ? `sur ${dureesResolution.length} ticket${dureesResolution.length > 1 ? "s" : ""} résolu${dureesResolution.length > 1 ? "s" : ""}`
+                : "aucun ticket résolu sur 7 jours"}
+            </div>
+          </div>
           <div className="border border-border/70 bg-surface p-4">
             <div className="flex items-baseline justify-between">
-              <span className="text-xs text-ink-muted">Résolution moy.</span>
-              <span className="font-mono text-sm">{KPI_RESOLUTION.at(-1)} min</span>
+              <span className="text-xs text-ink-muted">Tickets créés / jour</span>
+              <span className="font-mono text-sm text-ink">{serieTickets.at(-1)}</span>
             </div>
-            <Sparkline values={KPI_RESOLUTION} couleur="var(--color-signal)" />
-          </div>
-          <div className="border border-border/70 bg-surface p-4">
-            <div className="flex items-baseline justify-between">
-              <span className="text-xs text-ink-muted">Incidents / jour</span>
-              <span className="font-mono text-sm">{KPI_INCIDENTS.at(-1)}</span>
-            </div>
-            <Sparkline values={KPI_INCIDENTS} couleur="var(--color-warning)" />
+            <Sparkline values={serieTickets} couleur="var(--color-warning)" />
           </div>
         </section>
 
-        {/* Routeurs à surveiller */}
-        <section>
-          <h2 className="mb-3 text-sm text-ink-muted">Routeurs à surveiller</h2>
-          <div className="divide-y divide-border/70 border border-border/70 bg-surface">
-            {ROUTEURS.map((r) => (
-              <div key={r.id} className="flex items-center justify-between px-4 py-3">
-                <div className="flex items-center gap-3">
-                  <Pastille etat={r.etat} />
-                  <div>
-                    <div className="text-sm">{r.nom}</div>
-                    <div className="text-xs text-ink-muted">{r.client}</div>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="font-mono text-xs text-ink-muted">{r.id}</div>
-                  <div className="text-[11px] text-ink-faint">
-                    depuis <span className="font-mono">{r.depuis}</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Alertes récentes */}
-        <section>
-          <h2 className="mb-3 text-sm text-ink-muted">Alertes récentes</h2>
-          <div className="divide-y divide-border/70 border border-border/70 bg-surface">
-            {ALERTES.map((a) => (
-              <div key={a.id} className="flex items-start justify-between gap-4 px-4 py-3">
-                <div>
-                  <div className="text-sm">{a.message}</div>
-                  <div className="mt-1 text-[11px] text-ink-faint">
-                    <span className="font-mono">{a.routeur}</span> · {a.client}
-                  </div>
-                </div>
-                <div className="flex shrink-0 flex-col items-end gap-1.5">
-                  <span className={`rounded-sm border px-1.5 py-0.5 text-[10px] ${SEVERITE_STYLE[a.severite]}`}>
-                    {SEVERITE_LABEL[a.severite]}
-                  </span>
-                  <span className="font-mono text-[11px] text-ink-faint">{a.heure}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Tickets ouverts */}
+        {/* Derniers tickets */}
         <section className="pb-6">
-          <h2 className="mb-3 text-sm text-ink-muted">Tickets ouverts</h2>
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-sm text-ink-muted">Derniers tickets</h2>
+            <Link href="/tickets" className="text-xs text-brand-strong hover:underline">
+              Tout voir
+            </Link>
+          </div>
           <div className="divide-y divide-border/70 border border-border/70 bg-surface">
-            {TICKETS.map((t) => (
-              <div key={t.id} className="flex items-center justify-between px-4 py-3">
+            {tickets.slice(0, 5).map((t) => (
+              <Link
+                key={t.id}
+                href={`/tickets/${t.id}`}
+                className="flex items-center justify-between px-4 py-3 hover:bg-surface-raised"
+              >
                 <div>
-                  <div className="text-sm">{t.sujet}</div>
+                  <div className="text-sm text-ink">{t.sujet}</div>
                   <div className="mt-1 text-[11px] text-ink-faint">
-                    <span className="font-mono">{t.id}</span> · {t.client}
+                    <span className="font-mono">{t.numero}</span> · {t.client.nom}
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="text-xs text-warning">{STATUT_LABEL[t.statut]}</div>
-                  <div className="text-[11px] text-ink-faint">
-                    {t.technicien ?? "non assigné"}
-                  </div>
-                </div>
-              </div>
+                <div className="text-xs text-ink-muted">{STATUT_LABEL[t.statut]}</div>
+              </Link>
             ))}
+            {tickets.length === 0 && (
+              <p className="px-4 py-6 text-sm text-ink-muted">Aucun ticket pour l&apos;instant.</p>
+            )}
           </div>
         </section>
       </div>
     </div>
   );
+}
+
+function Pastille({ couleur }: { couleur: string }) {
+  return <span className={`inline-block h-1.5 w-1.5 rounded-full ${couleur}`} />;
 }
