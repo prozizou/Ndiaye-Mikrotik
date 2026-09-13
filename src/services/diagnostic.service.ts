@@ -2,9 +2,10 @@
 // MVP : trois contrôles — le routeur répond-il ? le WAN sort-il ? le DNS
 // résout-il ? Suffisant pour couvrir la majorité des tickets "Internet coupé"
 // et poser la structure ; Wi-Fi/DHCP/Gateway s'ajouteront de la même façon.
-// Sert aussi de point d'entrée aux alertes automatiques (evaluerAlertes) :
-// tant qu'il n'y a pas de supervision continue (Phase 7), c'est le seul
-// moment où l'état du parc est vérifié.
+// Sert aussi de point d'entrée aux alertes automatiques (evaluerAlertes).
+// Déclenché soit par un clic ("Lancer un diagnostic"), soit périodiquement
+// par /api/cron/diagnostics (Phase 7 — voir ce fichier pour la fréquence
+// réelle, qui n'a rien de temps réel).
 
 import { prisma } from "@/lib/database/prisma";
 import { appelerMikrotik } from "@/lib/mikrotik/client";

@@ -2,10 +2,11 @@
 // Phase 3 : "À traiter maintenant" s'appuie désormais sur de vraies alertes
 // typées (table Alerte, ouvertes/refermées par lancerDiagnostic — voir
 // services/alerte.service.ts et diagnostic.service.ts), pas seulement sur
-// enLigne=false. Comme les alertes n'apparaissent qu'au diagnostic suivant
-// (pas de supervision continue — Phase 7), un routeur hors ligne mais
-// jamais diagnostiqué depuis n'aurait aucune alerte : on le garde donc en
-// repli, sans le compter deux fois s'il a déjà une alerte ouverte.
+// enLigne=false. Depuis la Phase 7, ce diagnostic tourne aussi tout seul
+// (/api/cron/diagnostics), mais un routeur ajouté puis jamais encore
+// diagnostiqué (premier passage du cron pas encore effectué) n'aurait
+// toujours aucune alerte : on le garde donc en repli, sans le compter deux
+// fois s'il a déjà une alerte ouverte.
 
 import Link from "next/link";
 import { NetworkMotif } from "@/components/layout/network-motif";
@@ -284,8 +285,10 @@ export default async function DashboardPage() {
           </div>
         </section>
 
-        {/* KPI — pas de sélecteur de période : il faudrait un historique de
-            relevés qu'on n'a pas encore (voir Phase 7). */}
+        {/* KPI — toujours pas de sélecteur de période (24h/7j/30j) : la
+            Phase 7 fait désormais s'accumuler un historique de diagnostics
+            réguliers, mais pas encore assez profond ni exploité pour un
+            vrai graphique de disponibilité dans le temps. */}
         <section className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="border border-border/70 bg-surface p-4">
             <span className="text-xs text-ink-muted">Résolution moyenne (7 j)</span>

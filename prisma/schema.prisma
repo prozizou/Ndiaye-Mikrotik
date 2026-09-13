@@ -234,9 +234,10 @@ model Diagnostic {
 // Alertes
 // ---------------------------------------------------------------------------
 // Ouvertes/refermées par lancerDiagnostic() selon des seuils fixes (voir
-// lib/monitoring/seuils.ts) — il n'y a pas encore de supervision continue
-// (Phase 7 de la feuille de route) : une alerte n'apparaît ou ne se referme
-// qu'au prochain diagnostic lancé sur ce routeur, pas en temps réel.
+// lib/monitoring/seuils.ts) — au prochain diagnostic lancé sur ce routeur,
+// qu'il soit déclenché à la main ou par la supervision périodique (Phase 7,
+// /api/cron/diagnostics). Voir ce endpoint pour la fréquence réelle : pas
+// un vrai temps réel, un passage régulier.
 
 enum NiveauAlerte {
   AVERTISSEMENT

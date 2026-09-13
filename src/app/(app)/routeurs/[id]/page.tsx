@@ -43,8 +43,9 @@ export default async function PageDetailRouteur({ params }: { params: { id: stri
 
   const peutIntervenir = ["SUPER_ADMIN", "ADMINISTRATEUR", "TECHNICIEN"].includes(utilisateur.role);
   const estStaff = utilisateur.role !== "CLIENT";
-  // Latence/perte WAN : mesurées au dernier diagnostic, pas en continu (pas
-  // de supervision temps réel — voir Phase 7 de la feuille de route).
+  // Latence/perte WAN : mesurées au dernier diagnostic — désormais relancé
+  // aussi périodiquement (Phase 7, /api/cron/diagnostics), pas juste au clic,
+  // mais toujours pas en temps réel.
   const dernierDiagnostic = routeur.diagnostics[0];
 
   return (
