@@ -1,0 +1,12 @@
+node_modules
+.next
+out
+build
+
+.env
+.env.local
+.env*.local
+
+*.pem
+npm-debug.log*
+.DS_Store

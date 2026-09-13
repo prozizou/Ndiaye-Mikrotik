@@ -1,0 +1,42 @@
+/* src/app/globals.css */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-bg: #0e141b;
+  --color-surface: #141c25;
+  --color-surface-raised: #1a2430;
+  --color-border: #232e3b;
+  --color-border-strong: #2e3b4a;
+
+  --color-text: #edf2f6;
+  --color-text-muted: #8c99a8;
+  --color-text-faint: #5c6b7a;
+
+  --color-brand: #6c7bf5;
+  --color-brand-strong: #8592f7;
+
+  --color-signal: #34d8b8;
+  --color-warning: #f0a94e;
+  --color-critical: #f2665f;
+
+  --font-display: var(--font-space-grotesk), system-ui, sans-serif;
+  --font-mono: var(--font-ibm-plex-mono), ui-monospace, monospace;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-display);
+}
+
+::selection {
+  background: color-mix(in srgb, var(--color-brand) 35%, transparent);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+}

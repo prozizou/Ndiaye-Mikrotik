@@ -1,0 +1,292 @@
+// prisma/schema.prisma
+// MVP — Plateforme d'assistance MikroTik à distance
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Auth & utilisateurs
+// ---------------------------------------------------------------------------
+
+enum Role {
+  SUPER_ADMIN
+  ADMINISTRATEUR
+  TECHNICIEN
+  CLIENT
+}
+
+model Utilisateur {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  // Identifiant du compte Firebase Auth — Postgres reste la source de
+  // vérité pour le rôle et le clientId, Firebase ne fait que l'authentification.
+  firebaseUid   String   @unique
+  nom           String
+  role          Role
+  actif         Boolean  @default(true)
+  creeLe        DateTime @default(now())
+
+  // Un utilisateur "CLIENT" est rattaché à une fiche client
+  client        Client?  @relation(fields: [clientId], references: [id])
+  clientId      String?
+
+  ticketsAssignes      Ticket[]        @relation("TechnicienTickets")
+  interventions        Intervention[]  @relation("TechnicienInterventions")
+  journalAudit         JournalAudit[]
+
+  @@index([clientId])
+}
+
+// ---------------------------------------------------------------------------
+// Clients & sites
+// ---------------------------------------------------------------------------
+
+model Client {
+  id          String   @id @default(cuid())
+  nom         String
+  telephone   String?
+  email       String?
+  adresse     String?
+  creeLe      DateTime @default(now())
+
+  utilisateurs Utilisateur[]
+  sites        Site[]
+  tickets      Ticket[]
+
+  @@index([nom])
+}
+
+model Site {
+  id        String   @id @default(cuid())
+  nom       String
+  adresse   String?
+  client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  clientId  String
+
+  routeurs  Routeur[]
+
+  @@index([clientId])
+}
+
+// ---------------------------------------------------------------------------
+// Routeurs MikroTik
+// ---------------------------------------------------------------------------
+
+enum EtatVpn {
+  CONNECTE
+  DECONNECTE
+  JAMAIS_CONNECTE
+}
+
+model Routeur {
+  id              String   @id @default(cuid())
+  nom             String
+  modele          String?
+  versionRouterOs String?
+  numeroSerie     String?  @unique
+
+  site            Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  siteId          String
+
+  // Réseau VPN — jamais exposé tel quel côté client de l'API publique
+  ipVpn           String   @unique
+  clePubliqueWg   String
+  cleServeurWgId  String?  // référence à la conf serveur WireGuard, pas la clé privée du routeur
+
+  etatVpn         EtatVpn  @default(JAMAIS_CONNECTE)
+  enLigne         Boolean  @default(false)
+  derniereCommunication DateTime?
+
+  // Dernier relevé de supervision (mis à jour par le monitoring.service)
+  cpuPourcent     Int?
+  ramPourcent     Int?
+  uptimeSecondes  Int?
+
+  creeLe          DateTime @default(now())
+
+  tickets         Ticket[]
+  diagnostics     Diagnostic[]
+  interventions   Intervention[]
+  journalAudit    JournalAudit[]
+  secret          RouteurSecret?
+
+  @@index([siteId])
+  @@index([enLigne])
+}
+
+// Identifiants API MikroTik, chiffrés (AES-256-GCM) — table à ne jamais
+// exposer dans une réponse API ni un `select` accessible au navigateur.
+// Voir lib/mikrotik/secrets.ts pour le chiffrement/déchiffrement.
+model RouteurSecret {
+  id                String  @id @default(cuid())
+  routeur           Routeur @relation(fields: [routeurId], references: [id], onDelete: Cascade)
+  routeurId         String  @unique
+  utilisateurApi    String
+  motDePasseChiffre String
+
+  @@map("routeur_secrets")
+}
+
+// ---------------------------------------------------------------------------
+// Tickets d'assistance
+// ---------------------------------------------------------------------------
+
+enum StatutTicket {
+  NOUVEAU
+  ASSIGNE
+  DIAGNOSTIC
+  INTERVENTION
+  RESOLU
+  FERME
+}
+
+enum CategorieTicket {
+  INTERNET_COUPE
+  INTERNET_LENT
+  WIFI_INACCESSIBLE
+  DNS
+  APPAREIL_NON_CONNECTE
+  HOTSPOT
+  VPN
+  AUTRE
+}
+
+model Ticket {
+  id            String          @id @default(cuid())
+  numero        String          @unique // ex: T-2231, généré applicativement
+  sujet         String
+  description   String?
+  categorie     CategorieTicket
+  statut        StatutTicket    @default(NOUVEAU)
+
+  client        Client          @relation(fields: [clientId], references: [id])
+  clientId      String
+
+  routeur       Routeur?        @relation(fields: [routeurId], references: [id])
+  routeurId     String?
+
+  technicien    Utilisateur?    @relation("TechnicienTickets", fields: [technicienId], references: [id])
+  technicienId  String?
+
+  creeLe        DateTime        @default(now())
+  resoluLe      DateTime?
+  fermeLe       DateTime?
+
+  diagnostics   Diagnostic[]
+  interventions Intervention[]
+
+  @@index([clientId])
+  @@index([routeurId])
+  @@index([statut])
+}
+
+// ---------------------------------------------------------------------------
+// Diagnostics
+// ---------------------------------------------------------------------------
+
+enum SeveriteDiagnostic {
+  FAIBLE
+  MOYENNE
+  CRITIQUE
+}
+
+model Diagnostic {
+  id            String   @id @default(cuid())
+  routeur       Routeur  @relation(fields: [routeurId], references: [id])
+  routeurId     String
+
+  ticket        Ticket?  @relation(fields: [ticketId], references: [id])
+  ticketId      String?
+
+  // Résultats des contrôles MVP : ping, DNS, WAN
+  pingOk        Boolean?
+  dnsOk         Boolean?
+  wanOk         Boolean?
+
+  problemeProbable String?
+  severite      SeveriteDiagnostic?
+
+  lanceLe       DateTime @default(now())
+
+  @@index([routeurId])
+  @@index([ticketId])
+}
+
+// ---------------------------------------------------------------------------
+// Interventions
+// ---------------------------------------------------------------------------
+
+enum TypeIntervention {
+  TEST_INTERNET
+  TEST_DNS
+  TEST_GATEWAY
+  TEST_DHCP
+  VERIFIER_WIFI
+  RENOUVELER_CONNEXION
+  REDEMARRER_INTERFACE
+  SAUVEGARDER_CONFIGURATION
+  REDEMARRER_ROUTEUR
+  AUTRE
+}
+
+enum ResultatIntervention {
+  SUCCES
+  ECHEC
+  ANNULE
+}
+
+model Intervention {
+  id              String                @id @default(cuid())
+  type            TypeIntervention
+  routeur         Routeur               @relation(fields: [routeurId], references: [id])
+  routeurId       String
+
+  ticket          Ticket?               @relation(fields: [ticketId], references: [id])
+  ticketId        String?
+
+  technicien      Utilisateur           @relation("TechnicienInterventions", fields: [technicienId], references: [id])
+  technicienId    String
+
+  // Sauvegarde de la config avant une opération sensible (référence, pas le contenu brut ici)
+  sauvegardeAvantId String?
+
+  resultat        ResultatIntervention?
+  details         String?
+
+  demarreeLe      DateTime              @default(now())
+  terminaLe       DateTime?
+
+  @@index([routeurId])
+  @@index([ticketId])
+}
+
+// ---------------------------------------------------------------------------
+// Journal d'audit
+// ---------------------------------------------------------------------------
+
+model JournalAudit {
+  id              String   @id @default(cuid())
+
+  utilisateur     Utilisateur @relation(fields: [utilisateurId], references: [id])
+  utilisateurId   String
+
+  routeur         Routeur? @relation(fields: [routeurId], references: [id])
+  routeurId       String?
+
+  action          String   // ex: "Modification DNS", "Redémarrage routeur"
+  ancienneValeur  String?
+  nouvelleValeur  String?
+  resultat        String?  // ex: "Succès" / "Échec"
+
+  horodatage      DateTime @default(now())
+
+  @@index([utilisateurId])
+  @@index([routeurId])
+  @@index([horodatage])
+}
