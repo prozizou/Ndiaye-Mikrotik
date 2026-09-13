@@ -43,12 +43,16 @@ export function BoutonDiagnostic({ routeurId }: { routeurId: string }) {
   }
 
   return (
-    <div className="border border-gray-200 p-3">
-      <button onClick={lancer} disabled={enCours} className="border px-3 py-1.5 text-sm">
+    <div className="border border-border/70 bg-surface p-4">
+      <button
+        onClick={lancer}
+        disabled={enCours}
+        className="border border-border-strong px-3 py-1.5 text-sm text-ink hover:bg-surface-raised disabled:opacity-50"
+      >
         {enCours ? "Diagnostic en cours..." : "Lancer un diagnostic"}
       </button>
 
-      {erreur && <p className="mt-2 text-sm text-red-600">{erreur}</p>}
+      {erreur && <p className="mt-2 text-sm text-critical">{erreur}</p>}
 
       {resultat && (
         <div className="mt-3 space-y-1 text-sm">
@@ -56,7 +60,7 @@ export function BoutonDiagnostic({ routeurId }: { routeurId: string }) {
           <Ligne label="WAN" ok={resultat.wan.ok} />
           <Ligne label="DNS" ok={resultat.dns.ok} />
           {resultat.problemeProbable && (
-            <p className="mt-2 text-amber-600">{resultat.problemeProbable}</p>
+            <p className="mt-2 text-warning">{resultat.problemeProbable}</p>
           )}
         </div>
       )}
@@ -67,8 +71,8 @@ export function BoutonDiagnostic({ routeurId }: { routeurId: string }) {
 function Ligne({ label, ok }: { label: string; ok: boolean }) {
   return (
     <div className="flex items-center gap-2">
-      <span>{ok ? "✅" : "❌"}</span>
-      <span>{label}</span>
+      <span className={ok ? "text-signal" : "text-critical"}>{ok ? "✓" : "✕"}</span>
+      <span className="text-ink">{label}</span>
     </div>
   );
 }

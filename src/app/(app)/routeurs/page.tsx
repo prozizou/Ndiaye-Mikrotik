@@ -17,40 +17,40 @@ export default async function PageRouteurs() {
   });
 
   return (
-    <div className="mx-auto max-w-2xl p-4">
+    <div className="mx-auto max-w-2xl space-y-4 p-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-lg font-medium">Routeurs</h1>
+        <h1 className="font-display text-lg font-semibold tracking-tight">Routeurs</h1>
         {utilisateur.role !== "CLIENT" && (
-          <Link href="/routeurs/nouveau" className="text-sm underline">
+          <Link href="/routeurs/nouveau" className="text-sm text-brand-strong hover:underline">
             Ajouter un routeur
           </Link>
         )}
       </div>
 
-      <div className="mt-4 divide-y divide-gray-200 border border-gray-200">
+      <div className="divide-y divide-border/70 border border-border/70 bg-surface">
         {routeurs.map((r) => (
           <Link
             key={r.id}
             href={`/routeurs/${r.id}`}
-            className="flex items-center justify-between px-3 py-2.5 hover:bg-gray-50"
+            className="flex items-center justify-between px-4 py-3 hover:bg-surface-raised"
           >
             <div>
-              <div className="text-sm">{r.nom}</div>
-              <div className="text-xs text-gray-500">
+              <div className="text-sm text-ink">{r.nom}</div>
+              <div className="text-xs text-ink-muted">
                 {r.site.client.nom} — {r.site.nom}
               </div>
             </div>
             <div className="text-right">
-              <div className={`text-sm ${r.enLigne ? "text-emerald-600" : "text-red-600"}`}>
+              <div className={`text-sm ${r.enLigne ? "text-signal" : "text-critical"}`}>
                 {r.enLigne ? "En ligne" : "Hors ligne"}
               </div>
-              <div className="font-mono text-xs text-gray-500">{r.ipVpn}</div>
+              <div className="font-mono text-xs text-ink-faint">{r.ipVpn}</div>
             </div>
           </Link>
         ))}
 
         {routeurs.length === 0 && (
-          <p className="px-3 py-4 text-sm text-gray-500">Aucun routeur pour l'instant.</p>
+          <p className="px-4 py-6 text-sm text-ink-muted">Aucun routeur pour l'instant.</p>
         )}
       </div>
     </div>

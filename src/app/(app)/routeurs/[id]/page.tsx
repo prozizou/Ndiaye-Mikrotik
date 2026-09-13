@@ -25,7 +25,7 @@ export default async function PageDetailRouteur({ params }: { params: { id: stri
     await exigerAccesClient(routeur.site.client.id);
   } catch (erreur) {
     if (erreur instanceof ErreurAcces) {
-      return <p className="p-4 text-sm text-gray-600">Accès refusé.</p>;
+      return <p className="p-4 text-sm text-ink-muted">Accès refusé.</p>;
     }
     throw erreur;
   }
@@ -35,13 +35,18 @@ export default async function PageDetailRouteur({ params }: { params: { id: stri
   return (
     <div className="mx-auto max-w-2xl space-y-6 p-4">
       <div>
-        <h1 className="text-lg font-medium">{routeur.nom}</h1>
-        <p className="text-sm text-gray-500">
+        <div className="flex items-center gap-2">
+          <span
+            className={`inline-block h-1.5 w-1.5 rounded-full ${routeur.enLigne ? "bg-signal" : "bg-critical"}`}
+          />
+          <h1 className="font-display text-lg font-semibold tracking-tight">{routeur.nom}</h1>
+        </div>
+        <p className="mt-1 text-sm text-ink-muted">
           {routeur.site.client.nom} — {routeur.site.nom}
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 border border-gray-200 p-3 text-sm">
+      <div className="grid grid-cols-2 gap-4 border border-border/70 bg-surface p-4 text-sm">
         <Champ label="État" valeur={routeur.enLigne ? "En ligne" : "Hors ligne"} />
         <Champ label="IP VPN" valeur={routeur.ipVpn} mono />
         <Champ label="Modèle" valeur={routeur.modele ?? "—"} />
@@ -65,58 +70,58 @@ export default async function PageDetailRouteur({ params }: { params: { id: stri
       )}
 
       <section>
-        <h2 className="mb-2 text-sm text-gray-500">Dernières interventions</h2>
-        <div className="divide-y divide-gray-200 border border-gray-200">
+        <h2 className="mb-2 text-sm text-ink-muted">Dernières interventions</h2>
+        <div className="divide-y divide-border/70 border border-border/70 bg-surface">
           {routeur.interventions.map((i) => (
-            <div key={i.id} className="flex items-center justify-between px-3 py-2 text-sm">
-              <div>{i.type.replaceAll("_", " ").toLowerCase()}</div>
-              <div className="text-xs text-gray-500">
+            <div key={i.id} className="flex items-center justify-between px-4 py-3 text-sm">
+              <div className="text-ink">{i.type.replaceAll("_", " ").toLowerCase()}</div>
+              <div className="text-xs text-ink-muted">
                 {i.resultat ?? "en cours"} · {i.demarreeLe.toLocaleString("fr-FR")}
               </div>
             </div>
           ))}
           {routeur.interventions.length === 0 && (
-            <p className="px-3 py-4 text-sm text-gray-500">Aucune intervention pour l'instant.</p>
+            <p className="px-4 py-6 text-sm text-ink-muted">Aucune intervention pour l'instant.</p>
           )}
         </div>
       </section>
 
       <section>
-        <h2 className="mb-2 text-sm text-gray-500">Derniers diagnostics</h2>
-        <div className="divide-y divide-gray-200 border border-gray-200">
+        <h2 className="mb-2 text-sm text-ink-muted">Derniers diagnostics</h2>
+        <div className="divide-y divide-border/70 border border-border/70 bg-surface">
           {routeur.diagnostics.map((d) => (
-            <div key={d.id} className="flex items-center justify-between px-3 py-2 text-sm">
+            <div key={d.id} className="flex items-center justify-between px-4 py-3 text-sm">
               <div>
-                <div>{d.problemeProbable ?? "Aucun problème détecté"}</div>
-                <div className="font-mono text-xs text-gray-500">
+                <div className="text-ink">{d.problemeProbable ?? "Aucun problème détecté"}</div>
+                <div className="font-mono text-xs text-ink-muted">
                   ping {libelleBooleen(d.pingOk)} · wan {libelleBooleen(d.wanOk)} · dns{" "}
                   {libelleBooleen(d.dnsOk)}
                 </div>
               </div>
-              <div className="whitespace-nowrap text-xs text-gray-500">
+              <div className="whitespace-nowrap text-xs text-ink-muted">
                 {d.lanceLe.toLocaleString("fr-FR")}
               </div>
             </div>
           ))}
           {routeur.diagnostics.length === 0 && (
-            <p className="px-3 py-4 text-sm text-gray-500">Aucun diagnostic lancé pour l'instant.</p>
+            <p className="px-4 py-6 text-sm text-ink-muted">Aucun diagnostic lancé pour l'instant.</p>
           )}
         </div>
       </section>
 
       <section>
-        <h2 className="mb-2 text-sm text-gray-500">Tickets liés</h2>
-        <div className="divide-y divide-gray-200 border border-gray-200">
+        <h2 className="mb-2 text-sm text-ink-muted">Tickets liés</h2>
+        <div className="divide-y divide-border/70 border border-border/70 bg-surface">
           {routeur.tickets.map((t) => (
-            <div key={t.id} className="px-3 py-2 text-sm">
-              <div>{t.sujet}</div>
-              <div className="text-xs text-gray-500">
-                {t.numero} · {t.statut}
+            <div key={t.id} className="px-4 py-3 text-sm">
+              <div className="text-ink">{t.sujet}</div>
+              <div className="text-xs text-ink-muted">
+                <span className="font-mono">{t.numero}</span> · {t.statut}
               </div>
             </div>
           ))}
           {routeur.tickets.length === 0 && (
-            <p className="px-3 py-4 text-sm text-gray-500">Aucun ticket lié.</p>
+            <p className="px-4 py-6 text-sm text-ink-muted">Aucun ticket lié.</p>
           )}
         </div>
       </section>
@@ -127,8 +132,8 @@ export default async function PageDetailRouteur({ params }: { params: { id: stri
 function Champ({ label, valeur, mono }: { label: string; valeur: string; mono?: boolean }) {
   return (
     <div>
-      <div className="text-xs text-gray-500">{label}</div>
-      <div className={mono ? "font-mono" : ""}>{valeur}</div>
+      <div className="text-xs text-ink-muted">{label}</div>
+      <div className={`text-ink ${mono ? "font-mono" : ""}`}>{valeur}</div>
     </div>
   );
 }

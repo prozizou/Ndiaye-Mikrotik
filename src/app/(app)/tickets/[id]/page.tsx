@@ -34,7 +34,7 @@ export default async function PageDetailTicket({ params }: { params: { id: strin
     await exigerAccesClient(ticket.clientId);
   } catch (erreur) {
     if (erreur instanceof ErreurAcces) {
-      return <p className="p-4 text-sm text-gray-600">Accès refusé.</p>;
+      return <p className="p-4 text-sm text-ink-muted">Accès refusé.</p>;
     }
     throw erreur;
   }
@@ -52,18 +52,20 @@ export default async function PageDetailTicket({ params }: { params: { id: strin
   return (
     <div className="mx-auto max-w-2xl space-y-6 p-4">
       <div>
-        <h1 className="text-lg font-medium">{ticket.sujet}</h1>
-        <p className="text-sm text-gray-500">
-          {ticket.numero} · {ticket.client.nom}
+        <h1 className="font-display text-lg font-semibold tracking-tight">{ticket.sujet}</h1>
+        <p className="mt-1 text-sm text-ink-muted">
+          <span className="font-mono">{ticket.numero}</span> · {ticket.client.nom}
           {ticket.routeur && ` · ${ticket.routeur.nom}`}
         </p>
       </div>
 
-      {ticket.description && <p className="text-sm">{ticket.description}</p>}
+      {ticket.description && <p className="text-sm text-ink">{ticket.description}</p>}
 
-      <div className="border border-gray-200 p-3 text-sm">
-        <div>Statut : {STATUT_LABEL[ticket.statut]}</div>
-        <div>Technicien : {ticket.technicien?.nom ?? "non assigné"}</div>
+      <div className="border border-border/70 bg-surface p-4 text-sm">
+        <div className="text-ink">Statut : {STATUT_LABEL[ticket.statut]}</div>
+        <div className="mt-1 text-ink-muted">
+          Technicien : {ticket.technicien?.nom ?? "non assigné"}
+        </div>
       </div>
 
       {peutGerer && (
@@ -75,30 +77,31 @@ export default async function PageDetailTicket({ params }: { params: { id: strin
       )}
 
       <section>
-        <h2 className="mb-2 text-sm text-gray-500">Diagnostics liés</h2>
-        <div className="divide-y divide-gray-200 border border-gray-200">
+        <h2 className="mb-2 text-sm text-ink-muted">Diagnostics liés</h2>
+        <div className="divide-y divide-border/70 border border-border/70 bg-surface">
           {ticket.diagnostics.map((d) => (
-            <div key={d.id} className="px-3 py-2 text-sm">
+            <div key={d.id} className="px-4 py-3 text-sm text-ink">
               {d.problemeProbable ?? "Aucun problème détecté"} —{" "}
-              {d.lanceLe.toLocaleString("fr-FR")}
+              <span className="text-ink-muted">{d.lanceLe.toLocaleString("fr-FR")}</span>
             </div>
           ))}
           {ticket.diagnostics.length === 0 && (
-            <p className="px-3 py-4 text-sm text-gray-500">Aucun.</p>
+            <p className="px-4 py-6 text-sm text-ink-muted">Aucun.</p>
           )}
         </div>
       </section>
 
       <section>
-        <h2 className="mb-2 text-sm text-gray-500">Interventions liées</h2>
-        <div className="divide-y divide-gray-200 border border-gray-200">
+        <h2 className="mb-2 text-sm text-ink-muted">Interventions liées</h2>
+        <div className="divide-y divide-border/70 border border-border/70 bg-surface">
           {ticket.interventions.map((i) => (
-            <div key={i.id} className="px-3 py-2 text-sm">
-              {i.type} — {i.resultat ?? "en cours"} — {i.demarreeLe.toLocaleString("fr-FR")}
+            <div key={i.id} className="px-4 py-3 text-sm text-ink">
+              {i.type} — {i.resultat ?? "en cours"} —{" "}
+              <span className="text-ink-muted">{i.demarreeLe.toLocaleString("fr-FR")}</span>
             </div>
           ))}
           {ticket.interventions.length === 0 && (
-            <p className="px-3 py-4 text-sm text-gray-500">Aucune.</p>
+            <p className="px-4 py-6 text-sm text-ink-muted">Aucune.</p>
           )}
         </div>
       </section>

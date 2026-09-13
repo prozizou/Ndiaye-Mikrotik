@@ -44,31 +44,40 @@ export default function PageConnexion() {
   }
 
   return (
-    <form onSubmit={connecter} className="mx-auto mt-24 max-w-sm space-y-3 p-4">
-      <h1 className="text-lg font-medium">Connexion</h1>
+    <div className="flex min-h-screen items-center justify-center bg-bg px-4 text-ink">
+      <form onSubmit={connecter} className="w-full max-w-sm space-y-3">
+        <div className="mb-4 text-center">
+          <span className="font-display text-[17px] font-semibold tracking-tight">MikroAssist</span>
+          <p className="mt-1 text-sm text-ink-muted">Centre d'assistance MikroTik</p>
+        </div>
 
-      <input
-        type="email"
-        placeholder="Email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        required
-        className="w-full border p-2"
-      />
-      <input
-        type="password"
-        placeholder="Mot de passe"
-        value={motDePasse}
-        onChange={(e) => setMotDePasse(e.target.value)}
-        required
-        className="w-full border p-2"
-      />
+        <input
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+          className="w-full border border-border-strong bg-surface px-3 py-2 text-sm text-ink placeholder:text-ink-faint focus:border-brand focus:outline-none"
+        />
+        <input
+          type="password"
+          placeholder="Mot de passe"
+          value={motDePasse}
+          onChange={(e) => setMotDePasse(e.target.value)}
+          required
+          className="w-full border border-border-strong bg-surface px-3 py-2 text-sm text-ink placeholder:text-ink-faint focus:border-brand focus:outline-none"
+        />
 
-      {erreur && <p className="text-sm text-red-600">{erreur}</p>}
+        {erreur && <p className="text-sm text-critical">{erreur}</p>}
 
-      <button type="submit" disabled={enCours} className="w-full border p-2">
-        {enCours ? "Connexion..." : "Se connecter"}
-      </button>
-    </form>
+        <button
+          type="submit"
+          disabled={enCours}
+          className="w-full border border-brand bg-brand/10 px-3 py-2 text-sm font-medium text-ink hover:bg-brand/20 disabled:opacity-50"
+        >
+          {enCours ? "Connexion..." : "Se connecter"}
+        </button>
+      </form>
+    </div>
   );
 }

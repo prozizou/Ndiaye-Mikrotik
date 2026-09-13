@@ -15,6 +15,9 @@ const CATEGORIES = [
   ["AUTRE", "Autre problème"],
 ] as const;
 
+const CHAMP =
+  "w-full border border-border-strong bg-surface px-3 py-2 text-sm text-ink placeholder:text-ink-faint focus:border-brand focus:outline-none";
+
 export default async function PageNouveauTicket() {
   const utilisateur = await utilisateurConnecte();
 
@@ -31,13 +34,13 @@ export default async function PageNouveauTicket() {
   });
 
   return (
-    <form action={creerTicketAction} className="mx-auto mt-12 max-w-lg space-y-3 p-4">
-      <h1 className="text-lg font-medium">Nouveau ticket</h1>
+    <form action={creerTicketAction} className="mx-auto max-w-lg space-y-3 p-4">
+      <h1 className="font-display text-lg font-semibold tracking-tight">Nouveau ticket</h1>
 
       {clients && (
         <div>
-          <label className="block text-sm text-gray-600">Client</label>
-          <select name="clientId" required className="w-full border p-2">
+          <label className="mb-1 block text-sm text-ink-muted">Client</label>
+          <select name="clientId" required className={CHAMP}>
             {clients.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.nom}
@@ -48,8 +51,8 @@ export default async function PageNouveauTicket() {
       )}
 
       <div>
-        <label className="block text-sm text-gray-600">Routeur concerné (optionnel)</label>
-        <select name="routeurId" className="w-full border p-2">
+        <label className="mb-1 block text-sm text-ink-muted">Routeur concerné (optionnel)</label>
+        <select name="routeurId" className={CHAMP}>
           <option value="">—</option>
           {routeurs.map((r) => (
             <option key={r.id} value={r.id}>
@@ -60,8 +63,8 @@ export default async function PageNouveauTicket() {
       </div>
 
       <div>
-        <label className="block text-sm text-gray-600">Catégorie</label>
-        <select name="categorie" required className="w-full border p-2">
+        <label className="mb-1 block text-sm text-ink-muted">Catégorie</label>
+        <select name="categorie" required className={CHAMP}>
           {CATEGORIES.map(([valeur, libelle]) => (
             <option key={valeur} value={valeur}>
               {libelle}
@@ -70,15 +73,13 @@ export default async function PageNouveauTicket() {
         </select>
       </div>
 
-      <input name="sujet" placeholder="Sujet" required className="w-full border p-2" />
-      <textarea
-        name="description"
-        placeholder="Description (optionnel)"
-        rows={4}
-        className="w-full border p-2"
-      />
+      <input name="sujet" placeholder="Sujet" required className={CHAMP} />
+      <textarea name="description" placeholder="Description (optionnel)" rows={4} className={CHAMP} />
 
-      <button type="submit" className="w-full border p-2">
+      <button
+        type="submit"
+        className="w-full border border-brand bg-brand/10 px-3 py-2 text-sm font-medium text-ink hover:bg-brand/20"
+      >
         Créer le ticket
       </button>
     </form>

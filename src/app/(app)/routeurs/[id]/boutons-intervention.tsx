@@ -43,24 +43,24 @@ export function BoutonsIntervention({ routeurId }: { routeurId: string }) {
   }
 
   return (
-    <div className="space-y-2 border border-gray-200 p-3">
-      <div className="flex gap-2">
+    <div className="space-y-2 border border-border/70 bg-surface p-4">
+      <div className="flex flex-wrap gap-2">
         <button
           onClick={() => lancer("SAUVEGARDER_CONFIGURATION")}
           disabled={enCours !== null}
-          className="border px-3 py-1.5 text-sm"
+          className="border border-border-strong px-3 py-1.5 text-sm text-ink hover:bg-surface-raised disabled:opacity-50"
         >
           {enCours === "SAUVEGARDER_CONFIGURATION" ? "Sauvegarde..." : "Sauvegarder la configuration"}
         </button>
         <button
           onClick={() => lancer("REDEMARRER_ROUTEUR")}
           disabled={enCours !== null}
-          className="border border-red-300 px-3 py-1.5 text-sm text-red-700"
+          className="border border-critical/40 px-3 py-1.5 text-sm text-critical hover:bg-critical/10 disabled:opacity-50"
         >
           {enCours === "REDEMARRER_ROUTEUR" ? "Redémarrage..." : "Redémarrer le routeur"}
         </button>
       </div>
-      {message && <p className="text-sm text-gray-600">{message}</p>}
+      {message && <p className="text-sm text-ink-muted">{message}</p>}
     </div>
   );
 }

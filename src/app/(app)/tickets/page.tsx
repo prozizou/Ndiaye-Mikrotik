@@ -30,35 +30,35 @@ export default async function PageTickets() {
   });
 
   return (
-    <div className="mx-auto max-w-2xl p-4">
+    <div className="mx-auto max-w-2xl space-y-4 p-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-lg font-medium">Tickets</h1>
-        <Link href="/tickets/nouveau" className="text-sm underline">
+        <h1 className="font-display text-lg font-semibold tracking-tight">Tickets</h1>
+        <Link href="/tickets/nouveau" className="text-sm text-brand-strong hover:underline">
           Nouveau ticket
         </Link>
       </div>
 
-      <div className="mt-4 divide-y divide-gray-200 border border-gray-200">
+      <div className="divide-y divide-border/70 border border-border/70 bg-surface">
         {tickets.map((t) => (
           <Link
             key={t.id}
             href={`/tickets/${t.id}`}
-            className="flex items-center justify-between px-3 py-2.5 hover:bg-gray-50"
+            className="flex items-center justify-between px-4 py-3 hover:bg-surface-raised"
           >
             <div>
-              <div className="text-sm">{t.sujet}</div>
-              <div className="text-xs text-gray-500">
-                {t.numero} · {t.client.nom}
+              <div className="text-sm text-ink">{t.sujet}</div>
+              <div className="text-xs text-ink-muted">
+                <span className="font-mono">{t.numero}</span> · {t.client.nom}
               </div>
             </div>
             <div className="text-right">
-              <div className="text-sm">{STATUT_LABEL[t.statut]}</div>
-              <div className="text-xs text-gray-500">{t.technicien?.nom ?? "non assigné"}</div>
+              <div className="text-sm text-ink">{STATUT_LABEL[t.statut]}</div>
+              <div className="text-xs text-ink-muted">{t.technicien?.nom ?? "non assigné"}</div>
             </div>
           </Link>
         ))}
         {tickets.length === 0 && (
-          <p className="px-3 py-4 text-sm text-gray-500">Aucun ticket.</p>
+          <p className="px-4 py-6 text-sm text-ink-muted">Aucun ticket.</p>
         )}
       </div>
     </div>

@@ -76,15 +76,15 @@ export function WorkflowTicket({
   }
 
   return (
-    <div className="space-y-2 border border-gray-200 p-3">
+    <div className="space-y-3 border border-border/70 bg-surface p-4">
       {techniciens.length > 0 && (
         <div>
-          <label className="block text-sm text-gray-600">Assigner à</label>
+          <label className="mb-1 block text-sm text-ink-muted">Assigner à</label>
           <select
             onChange={(e) => assigner(e.target.value)}
             disabled={enCours}
             defaultValue=""
-            className="w-full border p-2 text-sm"
+            className="w-full border border-border-strong bg-surface px-3 py-2 text-sm text-ink focus:border-brand focus:outline-none"
           >
             <option value="" disabled>
               Choisir un technicien
@@ -99,12 +99,16 @@ export function WorkflowTicket({
       )}
 
       {prochain && (
-        <button onClick={avancerStatut} disabled={enCours} className="border px-3 py-1.5 text-sm">
+        <button
+          onClick={avancerStatut}
+          disabled={enCours}
+          className="border border-brand bg-brand/10 px-3 py-1.5 text-sm font-medium text-ink hover:bg-brand/20 disabled:opacity-50"
+        >
           {enCours ? "..." : `Passer à « ${STATUT_LABEL[prochain]} »`}
         </button>
       )}
 
-      {erreur && <p className="text-sm text-red-600">{erreur}</p>}
+      {erreur && <p className="text-sm text-critical">{erreur}</p>}
     </div>
   );
 }
