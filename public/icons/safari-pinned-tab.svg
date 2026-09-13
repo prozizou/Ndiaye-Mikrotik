@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Icône monochrome pour l'onglet épinglé Safari (macOS) — doit rester
+       un simple tracé plein, sans couleur ni fond : Safari applique sa
+       propre couleur (voir `color` sur le <link rel="mask-icon">). -->
+  <g stroke="#000" fill="#000">
+    <g strokeWidth="10" strokeLinecap="round">
+      <line x1="256" y1="256" x2="181" y2="123" />
+      <line x1="256" y1="256" x2="329" y2="115" />
+      <line x1="256" y1="256" x2="409" y2="235" />
+      <line x1="256" y1="256" x2="149" y2="270" />
+      <line x1="256" y1="256" x2="230" y2="381" />
+      <line x1="149" y1="270" x2="181" y2="123" />
+      <line x1="329" y1="115" x2="409" y2="235" />
+    </g>
+    <circle cx="256" cy="256" r="46" />
+    <circle cx="181" cy="123" r="24" />
+    <circle cx="329" cy="115" r="19" />
+    <circle cx="409" cy="235" r="17" />
+    <circle cx="149" cy="270" r="21" />
+    <circle cx="230" cy="381" r="26" />
+  </g>
+</svg>
