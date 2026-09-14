@@ -1,8 +1,14 @@
 // src/lib/mikrotik/client.ts
 // Appelle l'API REST de RouterOS 7 exclusivement via l'IP VPN du routeur —
 // jamais via une IP publique. Usage serveur uniquement (Node runtime).
-
-import { Agent } from "undici";
+//
+// Cette app tourne sur Vercel, dans des fonctions serverless éphémères :
+// elles ne peuvent pas rester membres d'un tunnel WireGuard en permanence,
+// donc elles ne peuvent JAMAIS atteindre directement l'IP VPN privée d'un
+// routeur, quel que soit le code écrit ici. Tout passe donc par une petite
+// passerelle toujours allumée (voir gateway/README.md) : elle, c'est un
+// processus permanent sur une VPS, pair WireGuard du parc, qu'on appelle ici
+// en HTTPS normal. Elle relaie ensuite l'appel REST vers le routeur visé.
 
 export class ErreurMikrotik extends Error {}
 
@@ -12,11 +18,6 @@ type OptionsRequeteMikrotik = {
   timeoutMs?: number;
 };
 
-// RouterOS présente un certificat auto-signé par défaut. Le trafic est de
-// toute façon confiné au tunnel WireGuard, mais idéalement on distribue une
-// CA interne aux routeurs et on retire ce contournement.
-const agentAutoSigne = new Agent({ connect: { rejectUnauthorized: false } });
-
 export async function appelerMikrotik(
   ipVpn: string,
   chemin: string,
@@ -25,29 +26,39 @@ export async function appelerMikrotik(
 ) {
   const { methode = "GET", corps, timeoutMs = 8000 } = options;
 
+  const urlPasserelle = process.env.MIKROTIK_GATEWAY_URL;
+  const secretPasserelle = process.env.MIKROTIK_GATEWAY_SECRET;
+  if (!urlPasserelle || !secretPasserelle) {
+    throw new ErreurMikrotik(
+      "MIKROTIK_GATEWAY_URL / MIKROTIK_GATEWAY_SECRET non configurés — voir gateway/README.md",
+    );
+  }
+
   const controleur = new AbortController();
   const minuteur = setTimeout(() => controleur.abort(), timeoutMs);
 
   try {
-    const reponse = await fetch(`https://${ipVpn}/rest${chemin}`, {
-      method: methode,
+    const reponse = await fetch(`${urlPasserelle.replace(/\/$/, "")}/relais`, {
+      method: "POST",
       headers: {
-        Authorization:
-          "Basic " +
-          Buffer.from(`${identifiants.utilisateur}:${identifiants.motDePasse}`).toString("base64"),
+        Authorization: `Bearer ${secretPasserelle}`,
         "Content-Type": "application/json",
       },
-      body: corps ? JSON.stringify(corps) : undefined,
+      body: JSON.stringify({ ip: ipVpn, chemin, methode, corps, identifiants }),
       signal: controleur.signal,
-      // @ts-expect-error -- option undici, non présente dans le type RequestInit standard
-      dispatcher: agentAutoSigne,
     });
 
+    const donnees = await reponse.json().catch(() => null);
+
     if (!reponse.ok) {
-      throw new ErreurMikrotik(`RouterOS a répondu ${reponse.status} sur ${chemin}`);
+      const details =
+        donnees && typeof donnees === "object" && "erreur" in donnees
+          ? String((donnees as { erreur: unknown }).erreur)
+          : `HTTP ${reponse.status}`;
+      throw new ErreurMikrotik(`Passerelle/RouterOS en erreur sur ${chemin} : ${details}`);
     }
 
-    return await reponse.json();
+    return donnees;
   } finally {
     clearTimeout(minuteur);
   }

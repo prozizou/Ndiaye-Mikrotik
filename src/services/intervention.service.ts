@@ -7,6 +7,7 @@ import { prisma } from "@/lib/database/prisma";
 import { appelerMikrotik } from "@/lib/mikrotik/client";
 import { recupererIdentifiantsMikrotik } from "@/lib/mikrotik/secrets";
 import { enregistrerAudit } from "@/lib/audit/journal.service";
+import { creerSauvegarde } from "./sauvegarde.service";
 import type { TypeIntervention, ResultatIntervention } from "@prisma/client";
 
 type ParametresIntervention = {
@@ -65,39 +66,26 @@ export async function redemarrerRouteur(params: ParametresIntervention) {
   }
 }
 
+// Sauvegarde manuelle, déclenchée par le bouton "Sauvegarder la
+// configuration" — trace la même SauvegardeRouteur que celles prises
+// automatiquement par executerAvecProtection() (voir sauvegarde.service.ts),
+// donc les deux apparaissent ensemble dans l'historique du routeur.
 export async function sauvegarderConfiguration(params: ParametresIntervention) {
-  const routeur = await prisma.routeur.findUniqueOrThrow({ where: { id: params.routeurId } });
-  const identifiants = await recupererIdentifiantsMikrotik(routeur.id);
   const intervention = await creerIntervention({ ...params, type: "SAUVEGARDER_CONFIGURATION" });
 
   try {
-    // Sauvegarde stockée sur le routeur lui-même pour le MVP. Rapatrier le
-    // fichier vers un stockage central (via /rest/file) est une amélioration
-    // à ajouter ensuite, pas un blocage pour cette première version.
-    const nomFichier = `sauvegarde-${routeur.id}-${Date.now()}`;
-    await appelerMikrotik(routeur.ipVpn, "/system/backup/save", identifiants, {
-      methode: "POST",
-      corps: { name: nomFichier },
+    const sauvegarde = await creerSauvegarde({
+      routeurId: params.routeurId,
+      utilisateurId: params.technicienId,
+      interventionId: intervention.id,
+      raison: "Sauvegarde manuelle",
     });
 
-    await cloturerIntervention(intervention.id, "SUCCES", nomFichier);
-    await enregistrerAudit({
-      utilisateurId: params.technicienId,
-      routeurId: routeur.id,
-      action: "Sauvegarde de la configuration",
-      nouvelleValeur: nomFichier,
-      resultat: "Succès",
-    });
-    return { ok: true as const, nomFichier };
+    await cloturerIntervention(intervention.id, "SUCCES", sauvegarde.nomFichier);
+    return { ok: true as const, nomFichier: sauvegarde.nomFichier };
   } catch (erreur) {
     const details = erreur instanceof Error ? erreur.message : "Erreur inconnue";
     await cloturerIntervention(intervention.id, "ECHEC", details);
-    await enregistrerAudit({
-      utilisateurId: params.technicienId,
-      routeurId: routeur.id,
-      action: "Sauvegarde de la configuration",
-      resultat: `Échec — ${details}`,
-    });
     return { ok: false as const, details };
   }
 }
