@@ -1,8 +1,10 @@
 // src/app/tickets/[id]/page.tsx
 
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/database/prisma";
 import { utilisateurConnecte, exigerAccesClient, ErreurAcces } from "@/lib/permissions/permissions";
+import { estEnRetard } from "@/lib/tickets/sla";
 import { WorkflowTicket } from "./workflow-ticket";
 
 const STATUT_LABEL: Record<string, string> = {
@@ -10,8 +12,23 @@ const STATUT_LABEL: Record<string, string> = {
   ASSIGNE: "Assigné",
   DIAGNOSTIC: "Diagnostic",
   INTERVENTION: "Intervention",
+  EN_ATTENTE_CLIENT: "En attente client",
   RESOLU: "Résolu",
   FERME: "Fermé",
+};
+
+const PRIORITE_LABEL: Record<string, string> = {
+  BASSE: "Basse",
+  NORMALE: "Normale",
+  HAUTE: "Haute",
+  URGENTE: "Urgente",
+};
+
+const PRIORITE_STYLE: Record<string, string> = {
+  BASSE: "border-border-strong text-ink-faint",
+  NORMALE: "border-border-strong text-ink-muted",
+  HAUTE: "border-warning/30 text-warning",
+  URGENTE: "border-critical/30 text-critical",
 };
 
 export default async function PageDetailTicket({ params }: { params: { id: string } }) {
@@ -48,11 +65,19 @@ export default async function PageDetailTicket({ params }: { params: { id: strin
       : [];
 
   const peutGerer = ["SUPER_ADMIN", "ADMINISTRATEUR", "TECHNICIEN"].includes(utilisateur.role);
+  const enRetard = estEnRetard(ticket.echeanceSla, ticket.statut);
 
   return (
     <div className="mx-auto max-w-2xl space-y-6 p-4">
       <div>
-        <h1 className="font-display text-lg font-semibold tracking-tight">{ticket.sujet}</h1>
+        <div className="flex flex-wrap items-center gap-2">
+          <h1 className="font-display text-lg font-semibold tracking-tight">{ticket.sujet}</h1>
+          <span
+            className={`rounded-sm border px-1.5 py-0.5 text-[10px] ${PRIORITE_STYLE[ticket.priorite]}`}
+          >
+            {PRIORITE_LABEL[ticket.priorite]}
+          </span>
+        </div>
         <p className="mt-1 text-sm text-ink-muted">
           <span className="font-mono">{ticket.numero}</span> · {ticket.client.nom}
           {ticket.routeur && ` · ${ticket.routeur.nom}`}
@@ -66,7 +91,21 @@ export default async function PageDetailTicket({ params }: { params: { id: strin
         <div className="mt-1 text-ink-muted">
           Technicien : {ticket.technicien?.nom ?? "non assigné"}
         </div>
+        {ticket.echeanceSla && (
+          <div className={`mt-1 ${enRetard ? "text-critical" : "text-ink-muted"}`}>
+            SLA : {enRetard ? "dépassé depuis le" : "échéance le"} {ticket.echeanceSla.toLocaleString("fr-FR")}
+          </div>
+        )}
       </div>
+
+      {peutGerer && ticket.routeur && (
+        <Link
+          href={`/routeurs/${ticket.routeur.id}?ticketId=${ticket.id}`}
+          className="block w-full border border-brand bg-brand/10 px-4 py-2.5 text-center text-sm font-medium text-ink hover:bg-brand/20"
+        >
+          Intervenir sur {ticket.routeur.nom}
+        </Link>
+      )}
 
       {peutGerer && (
         <WorkflowTicket

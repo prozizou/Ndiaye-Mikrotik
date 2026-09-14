@@ -1,5 +1,6 @@
 // src/app/routeurs/[id]/page.tsx
 
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/database/prisma";
 import { utilisateurConnecte, exigerAccesClient, ErreurAcces } from "@/lib/permissions/permissions";
@@ -16,7 +17,13 @@ const TYPE_ALERTE_LABEL: Record<TypeAlerte, string> = {
   LATENCE_ELEVEE: "Latence élevée",
 };
 
-export default async function PageDetailRouteur({ params }: { params: { id: string } }) {
+export default async function PageDetailRouteur({
+  params,
+  searchParams,
+}: {
+  params: { id: string };
+  searchParams: { ticketId?: string };
+}) {
   const utilisateur = await utilisateurConnecte();
 
   const routeur = await prisma.routeur.findUnique({
@@ -43,6 +50,17 @@ export default async function PageDetailRouteur({ params }: { params: { id: stri
 
   const peutIntervenir = ["SUPER_ADMIN", "ADMINISTRATEUR", "TECHNICIEN"].includes(utilisateur.role);
   const estStaff = utilisateur.role !== "CLIENT";
+
+  // Le ticket vient d'un paramètre d'URL (lien "Intervenir" depuis la fiche
+  // ticket) — on vérifie qu'il appartient bien à ce routeur avant de le
+  // rattacher au diagnostic/à l'intervention, plutôt que de faire confiance
+  // à une valeur qui pourrait être modifiée dans l'URL.
+  const ticketPrepare = searchParams.ticketId
+    ? await prisma.ticket.findFirst({
+        where: { id: searchParams.ticketId, routeurId: routeur.id },
+        select: { id: true, numero: true },
+      })
+    : null;
   // Latence/perte WAN : mesurées au dernier diagnostic — désormais relancé
   // aussi périodiquement (Phase 7, /api/cron/diagnostics), pas juste au clic,
   // mais toujours pas en temps réel.
@@ -128,8 +146,17 @@ export default async function PageDetailRouteur({ params }: { params: { id: stri
 
       {peutIntervenir && (
         <div className="space-y-3">
-          <BoutonDiagnostic routeurId={routeur.id} />
-          <BoutonsIntervention routeurId={routeur.id} />
+          {ticketPrepare && (
+            <p className="border border-brand/40 bg-brand/10 px-4 py-2.5 text-sm text-ink">
+              Diagnostic et intervention seront rattachés au ticket{" "}
+              <Link href={`/tickets/${ticketPrepare.id}`} className="font-mono underline">
+                {ticketPrepare.numero}
+              </Link>
+              .
+            </p>
+          )}
+          <BoutonDiagnostic routeurId={routeur.id} ticketId={ticketPrepare?.id} />
+          <BoutonsIntervention routeurId={routeur.id} ticketId={ticketPrepare?.id} />
         </div>
       )}
 

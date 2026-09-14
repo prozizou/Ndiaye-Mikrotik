@@ -16,7 +16,7 @@ type ResultatDiagnostic = {
   severite: string | null;
 };
 
-export function BoutonDiagnostic({ routeurId }: { routeurId: string }) {
+export function BoutonDiagnostic({ routeurId, ticketId }: { routeurId: string; ticketId?: string }) {
   const router = useRouter();
   const [enCours, setEnCours] = useState(false);
   const [resultat, setResultat] = useState<ResultatDiagnostic | null>(null);
@@ -28,7 +28,11 @@ export function BoutonDiagnostic({ routeurId }: { routeurId: string }) {
     setResultat(null);
 
     try {
-      const reponse = await fetch(`/api/routeurs/${routeurId}/diagnostic`, { method: "POST" });
+      const reponse = await fetch(`/api/routeurs/${routeurId}/diagnostic`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ticketId }),
+      });
       if (!reponse.ok) {
         const corps = await reponse.json().catch(() => ({}));
         throw new Error(corps.erreur ?? "Échec du diagnostic");

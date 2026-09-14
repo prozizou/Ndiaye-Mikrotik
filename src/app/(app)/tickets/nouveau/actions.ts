@@ -5,7 +5,7 @@
 import { redirect } from "next/navigation";
 import { utilisateurConnecte, exigerAccesClient } from "@/lib/permissions/permissions";
 import { creerTicket } from "@/services/ticket.service";
-import type { CategorieTicket } from "@prisma/client";
+import type { CategorieTicket, PrioriteTicket } from "@prisma/client";
 
 export async function creerTicketAction(formData: FormData) {
   const utilisateur = await utilisateurConnecte();
@@ -20,6 +20,7 @@ export async function creerTicketAction(formData: FormData) {
     description: (formData.get("description") as string) || undefined,
     categorie: formData.get("categorie") as CategorieTicket,
     routeurId: (formData.get("routeurId") as string) || undefined,
+    priorite: (formData.get("priorite") as PrioriteTicket) || undefined,
   });
 
   redirect(`/tickets/${ticket.id}`);

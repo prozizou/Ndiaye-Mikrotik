@@ -20,8 +20,16 @@ const STATUT_LABEL: Record<StatutTicket, string> = {
   ASSIGNE: "Assigné",
   DIAGNOSTIC: "Diagnostic",
   INTERVENTION: "Intervention",
+  EN_ATTENTE_CLIENT: "En attente client",
   RESOLU: "Résolu",
   FERME: "Fermé",
+};
+
+const PRIORITE_LABEL_COURT: Record<string, string> = {
+  BASSE: "Basse",
+  NORMALE: "Normale",
+  HAUTE: "Haute",
+  URGENTE: "Urgente",
 };
 
 const TYPE_ALERTE_LABEL: Record<TypeAlerte, string> = {
@@ -132,9 +140,13 @@ export default async function DashboardPage() {
   const disponibilite = totalRouteurs > 0 ? (routeursEnLigne.length / totalRouteurs) * 100 : null;
 
   const ticketsOuverts = tickets.filter((t) => t.statut !== "FERME");
+  const POIDS_PRIORITE: Record<string, number> = { URGENTE: 0, HAUTE: 1, NORMALE: 2, BASSE: 3 };
   const ticketsATraiter = ticketsOuverts
     .filter((t) => t.statut === "NOUVEAU" || t.statut === "ASSIGNE")
-    .sort((a, b) => a.creeLe.getTime() - b.creeLe.getTime());
+    .sort((a, b) => {
+      const ecartPriorite = POIDS_PRIORITE[a.priorite] - POIDS_PRIORITE[b.priorite];
+      return ecartPriorite !== 0 ? ecartPriorite : a.creeLe.getTime() - b.creeLe.getTime();
+    });
 
   const ticketsCreesRecents = tickets.filter((t) => t.creeLe >= depuis7Jours);
   const serieTickets = serieParJour(
@@ -187,9 +199,9 @@ export default async function DashboardPage() {
       href: `/tickets/${t.id}`,
       titre: t.sujet,
       sousTitre: `${t.numero} · ${t.client.nom}`,
-      badge: STATUT_LABEL[t.statut],
+      badge: `${STATUT_LABEL[t.statut]} · ${PRIORITE_LABEL_COURT[t.priorite]}`,
       detail: `depuis ${formatDepuis(t.creeLe)}`,
-      urgent: t.statut === "NOUVEAU",
+      urgent: t.statut === "NOUVEAU" || t.priorite === "URGENTE" || t.priorite === "HAUTE",
     })),
   ];
 

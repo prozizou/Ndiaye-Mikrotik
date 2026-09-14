@@ -15,6 +15,13 @@ const CATEGORIES = [
   ["AUTRE", "Autre problème"],
 ] as const;
 
+const PRIORITES = [
+  ["BASSE", "Basse — 72 h"],
+  ["NORMALE", "Normale — 24 h"],
+  ["HAUTE", "Haute — 8 h"],
+  ["URGENTE", "Urgente — 4 h"],
+] as const;
+
 const CHAMP =
   "w-full border border-border-strong bg-surface px-3 py-2 text-sm text-ink placeholder:text-ink-faint focus:border-brand focus:outline-none";
 
@@ -66,6 +73,17 @@ export default async function PageNouveauTicket() {
         <label className="mb-1 block text-sm text-ink-muted">Catégorie</label>
         <select name="categorie" required className={CHAMP}>
           {CATEGORIES.map(([valeur, libelle]) => (
+            <option key={valeur} value={valeur}>
+              {libelle}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div>
+        <label className="mb-1 block text-sm text-ink-muted">Priorité</label>
+        <select name="priorite" defaultValue="NORMALE" className={CHAMP}>
+          {PRIORITES.map(([valeur, libelle]) => (
             <option key={valeur} value={valeur}>
               {libelle}
             </option>

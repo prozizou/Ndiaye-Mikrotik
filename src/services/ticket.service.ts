@@ -2,7 +2,8 @@
 
 import { prisma } from "@/lib/database/prisma";
 import { enregistrerAudit } from "@/lib/audit/journal.service";
-import type { CategorieTicket, StatutTicket } from "@prisma/client";
+import { calculerEcheanceSla } from "@/lib/tickets/sla";
+import type { CategorieTicket, PrioriteTicket, StatutTicket } from "@prisma/client";
 
 // Le workflow du cahier des charges est linéaire, mais un technicien doit
 // pouvoir revenir en arrière (ex: DIAGNOSTIC -> ASSIGNE si mal aiguillé).
@@ -10,7 +11,8 @@ const TRANSITIONS_AUTORISEES: Record<StatutTicket, StatutTicket[]> = {
   NOUVEAU: ["ASSIGNE"],
   ASSIGNE: ["DIAGNOSTIC"],
   DIAGNOSTIC: ["INTERVENTION", "ASSIGNE"],
-  INTERVENTION: ["RESOLU", "DIAGNOSTIC"],
+  INTERVENTION: ["EN_ATTENTE_CLIENT", "RESOLU", "DIAGNOSTIC"],
+  EN_ATTENTE_CLIENT: ["INTERVENTION", "RESOLU"],
   RESOLU: ["FERME", "INTERVENTION"],
   FERME: [],
 };
@@ -31,8 +33,11 @@ export async function creerTicket(params: {
   description?: string;
   categorie: CategorieTicket;
   routeurId?: string;
+  priorite?: PrioriteTicket;
 }) {
   const numero = await genererNumero();
+  const priorite = params.priorite ?? "NORMALE";
+  const creeLe = new Date();
 
   return prisma.ticket.create({
     data: {
@@ -42,6 +47,9 @@ export async function creerTicket(params: {
       description: params.description,
       categorie: params.categorie,
       routeurId: params.routeurId,
+      priorite,
+      creeLe,
+      echeanceSla: calculerEcheanceSla(priorite, creeLe),
     },
   });
 }
