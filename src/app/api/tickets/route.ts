@@ -28,6 +28,7 @@ export async function POST(request: Request) {
     description: corps.description,
     categorie: corps.categorie,
     routeurId: corps.routeurId,
+    priorite: corps.priorite,
   });
 
   return NextResponse.json(ticket, { status: 201 });

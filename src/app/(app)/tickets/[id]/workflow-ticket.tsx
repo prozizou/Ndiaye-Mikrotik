@@ -10,7 +10,8 @@ const PROCHAIN_STATUT: Partial<Record<StatutTicket, StatutTicket>> = {
   NOUVEAU: "ASSIGNE",
   ASSIGNE: "DIAGNOSTIC",
   DIAGNOSTIC: "INTERVENTION",
-  INTERVENTION: "RESOLU",
+  INTERVENTION: "EN_ATTENTE_CLIENT",
+  EN_ATTENTE_CLIENT: "RESOLU",
   RESOLU: "FERME",
 };
 
@@ -19,6 +20,7 @@ const STATUT_LABEL: Record<StatutTicket, string> = {
   ASSIGNE: "Assigné",
   DIAGNOSTIC: "Diagnostic",
   INTERVENTION: "Intervention",
+  EN_ATTENTE_CLIENT: "En attente client",
   RESOLU: "Résolu",
   FERME: "Fermé",
 };

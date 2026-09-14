@@ -150,6 +150,7 @@ enum StatutTicket {
   ASSIGNE
   DIAGNOSTIC
   INTERVENTION
+  EN_ATTENTE_CLIENT
   RESOLU
   FERME
 }
@@ -165,12 +166,20 @@ enum CategorieTicket {
   AUTRE
 }
 
+enum PrioriteTicket {
+  BASSE
+  NORMALE
+  HAUTE
+  URGENTE
+}
+
 model Ticket {
   id            String          @id @default(cuid())
   numero        String          @unique // ex: T-2231, généré applicativement
   sujet         String
   description   String?
   categorie     CategorieTicket
+  priorite      PrioriteTicket  @default(NORMALE)
   statut        StatutTicket    @default(NOUVEAU)
 
   client        Client          @relation(fields: [clientId], references: [id])
@@ -183,6 +192,9 @@ model Ticket {
   technicienId  String?
 
   creeLe        DateTime        @default(now())
+  // Calculée à la création depuis la priorité (voir lib/tickets/sla.ts) —
+  // pas recalculée si la priorité change ensuite.
+  echeanceSla   DateTime?
   resoluLe      DateTime?
   fermeLe       DateTime?
 

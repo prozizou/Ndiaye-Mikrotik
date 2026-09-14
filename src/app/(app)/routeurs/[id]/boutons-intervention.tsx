@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 
 type ResultatIntervention = { ok: boolean; details?: string; nomFichier?: string; erreur?: string };
 
-export function BoutonsIntervention({ routeurId }: { routeurId: string }) {
+export function BoutonsIntervention({ routeurId, ticketId }: { routeurId: string; ticketId?: string }) {
   const router = useRouter();
   const [enCours, setEnCours] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -27,7 +27,7 @@ export function BoutonsIntervention({ routeurId }: { routeurId: string }) {
       const reponse = await fetch(`/api/routeurs/${routeurId}/interventions`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type, confirmation: type === "REDEMARRER_ROUTEUR" }),
+        body: JSON.stringify({ type, confirmation: type === "REDEMARRER_ROUTEUR", ticketId }),
       });
 
       const donnees = (await reponse.json()) as ResultatIntervention;
