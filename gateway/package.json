@@ -1,0 +1,14 @@
+{
+  "name": "mikroassist-gateway",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Relais HTTPS <-> WireGuard pour MikroAssist — voir README.md",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "undici": "^6.19.8"
+  }
+}

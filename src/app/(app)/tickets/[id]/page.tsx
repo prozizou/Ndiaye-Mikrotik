@@ -99,12 +99,20 @@ export default async function PageDetailTicket({ params }: { params: { id: strin
       </div>
 
       {peutGerer && ticket.routeur && (
-        <Link
-          href={`/routeurs/${ticket.routeur.id}?ticketId=${ticket.id}`}
-          className="block w-full border border-brand bg-brand/10 px-4 py-2.5 text-center text-sm font-medium text-ink hover:bg-brand/20"
-        >
-          Intervenir sur {ticket.routeur.nom}
-        </Link>
+        <div className="space-y-2">
+          <Link
+            href={`/assistance/${ticket.id}`}
+            className="block w-full border border-brand bg-brand/10 px-4 py-2.5 text-center text-sm font-medium text-ink hover:bg-brand/20"
+          >
+            Ouvrir la session guidée
+          </Link>
+          <Link
+            href={`/routeurs/${ticket.routeur.id}?ticketId=${ticket.id}`}
+            className="block text-center text-xs text-ink-faint underline"
+          >
+            Voir la fiche technique de {ticket.routeur.nom}
+          </Link>
+        </div>
       )}
 
       {peutGerer && (
