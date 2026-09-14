@@ -46,6 +46,7 @@ model Utilisateur {
   interventions        Intervention[]  @relation("TechnicienInterventions")
   journalAudit         JournalAudit[]
   alertesAcquittees    Alerte[]
+  sauvegardesDeclenchees SauvegardeRouteur[]
 
   @@index([clientId])
 }
@@ -123,6 +124,7 @@ model Routeur {
   journalAudit    JournalAudit[]
   alertes         Alerte[]
   secret          RouteurSecret?
+  sauvegardes     SauvegardeRouteur[]
 
   @@index([siteId])
   @@index([enLigne])
@@ -326,8 +328,10 @@ model Intervention {
   technicien      Utilisateur           @relation("TechnicienInterventions", fields: [technicienId], references: [id])
   technicienId    String
 
-  // Sauvegarde de la config avant une opération sensible (référence, pas le contenu brut ici)
-  sauvegardeAvantId String?
+  // Sauvegarde prise juste avant cette intervention (voir SauvegardeRouteur
+  // et sauvegarde.service.ts) — présente seulement pour les interventions
+  // passées par executerAvecProtection(), pas pour les tests en lecture seule.
+  sauvegarde      SauvegardeRouteur?
 
   resultat        ResultatIntervention?
   details         String?
@@ -337,6 +341,55 @@ model Intervention {
 
   @@index([routeurId])
   @@index([ticketId])
+}
+
+// ---------------------------------------------------------------------------
+// Sauvegardes & rollback
+// ---------------------------------------------------------------------------
+// Fondation de sécurité avant toute modification sensible d'un routeur —
+// manuelle aujourd'hui (bouton "Sauvegarder"), pilotée par l'IA plus tard
+// (Phase 11) sans que ce modèle ait besoin de changer. Le mécanisme de
+// restauration est celui, natif, de RouterOS (/system/backup/save et
+// /system/backup/load) : on ne tente jamais de "défaire" une modification
+// commande par commande, on revient à un instantané complet, validé par
+// RouterOS lui-même. Voir sauvegarde.service.ts.
+
+enum StatutSauvegarde {
+  DISPONIBLE
+  RESTAUREE
+  ECHEC
+}
+
+model SauvegardeRouteur {
+  id              String   @id @default(cuid())
+  routeur         Routeur  @relation(fields: [routeurId], references: [id], onDelete: Cascade)
+  routeurId       String
+
+  // Nom du fichier .backup créé par /system/backup/save. Reste stocké sur le
+  // routeur lui-même pour ce MVP — le rapatrier vers un stockage central
+  // (S3, etc.) est une amélioration à ajouter ensuite, pas un blocage : voir
+  // la note dans creerSauvegarde().
+  nomFichier      String
+
+  // Pourquoi cette sauvegarde a été prise, ex. "Avant intervention :
+  // Redémarrage du routeur" — sert à afficher une liste lisible, pas
+  // seulement un horodatage.
+  raison          String
+
+  declenchePar    Utilisateur @relation(fields: [declencheeParId], references: [id])
+  declencheeParId String
+
+  // Présent uniquement quand la sauvegarde a été prise via
+  // executerAvecProtection() dans le cadre d'une intervention suivie.
+  intervention    Intervention? @relation(fields: [interventionId], references: [id])
+  interventionId  String?  @unique
+
+  statut          StatutSauvegarde @default(DISPONIBLE)
+  restaureeLe     DateTime?
+
+  creeLe          DateTime @default(now())
+
+  @@index([routeurId])
 }
 
 // ---------------------------------------------------------------------------

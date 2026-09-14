@@ -7,7 +7,15 @@ import { utilisateurConnecte, exigerAccesClient, ErreurAcces } from "@/lib/permi
 import { AcquitterAlerteBouton } from "@/components/alertes/acquitter-alerte-bouton";
 import { BoutonDiagnostic } from "./bouton-diagnostic";
 import { BoutonsIntervention } from "./boutons-intervention";
+import { RestaurerSauvegardeBouton } from "./restaurer-sauvegarde-bouton";
+import { peut } from "@/lib/permissions/permissions";
 import type { TypeAlerte } from "@prisma/client";
+
+const STATUT_SAUVEGARDE_LABEL: Record<string, string> = {
+  DISPONIBLE: "Disponible",
+  RESTAUREE: "Restaurée",
+  ECHEC: "Échec",
+};
 
 const TYPE_ALERTE_LABEL: Record<TypeAlerte, string> = {
   ROUTEUR_INJOIGNABLE: "Routeur injoignable",
@@ -34,10 +42,17 @@ export default async function PageDetailRouteur({
       interventions: { orderBy: { demarreeLe: "desc" }, take: 10 },
       tickets: { orderBy: { creeLe: "desc" }, take: 5 },
       alertes: { where: { resolueLe: null }, include: { acquitteePar: { select: { nom: true } } } },
+      sauvegardes: {
+        orderBy: { creeLe: "desc" },
+        take: 10,
+        include: { declenchePar: { select: { nom: true } } },
+      },
     },
   });
 
   if (!routeur) notFound();
+
+  const peutRestaurer = await peut("restaurerSauvegarde");
 
   try {
     await exigerAccesClient(routeur.site.client.id);
@@ -173,6 +188,29 @@ export default async function PageDetailRouteur({
           ))}
           {routeur.interventions.length === 0 && (
             <p className="px-4 py-6 text-sm text-ink-muted">Aucune intervention pour l'instant.</p>
+          )}
+        </div>
+      </section>
+
+      <section>
+        <h2 className="mb-2 text-sm text-ink-muted">Sauvegardes</h2>
+        <div className="divide-y divide-border/70 border border-border/70 bg-surface">
+          {routeur.sauvegardes.map((s) => (
+            <div key={s.id} className="flex items-center justify-between gap-4 px-4 py-3 text-sm">
+              <div>
+                <div className="text-ink">{s.raison}</div>
+                <div className="text-xs text-ink-muted">
+                  {STATUT_SAUVEGARDE_LABEL[s.statut] ?? s.statut} · par {s.declenchePar.nom} ·{" "}
+                  {s.creeLe.toLocaleString("fr-FR")}
+                </div>
+              </div>
+              {peutRestaurer && s.statut === "DISPONIBLE" && (
+                <RestaurerSauvegardeBouton routeurId={routeur.id} sauvegardeId={s.id} />
+              )}
+            </div>
+          ))}
+          {routeur.sauvegardes.length === 0 && (
+            <p className="px-4 py-6 text-sm text-ink-muted">Aucune sauvegarde pour l'instant.</p>
           )}
         </div>
       </section>

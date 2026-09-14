@@ -71,6 +71,10 @@ export const PERMISSIONS = {
   accederTerminal: ["SUPER_ADMIN", "ADMINISTRATEUR", "TECHNICIEN"],
   lancerDiagnostic: ["SUPER_ADMIN", "ADMINISTRATEUR", "TECHNICIEN"],
   lancerIntervention: ["SUPER_ADMIN", "ADMINISTRATEUR", "TECHNICIEN"],
+  // Restaurer une sauvegarde redémarre le routeur et écrase sa config
+  // actuelle — réservé aux rôles qui peuvent déjà gérer des routeurs, pas
+  // ouvert au technicien qui peut seulement en créer (via une intervention).
+  restaurerSauvegarde: ["SUPER_ADMIN", "ADMINISTRATEUR"],
   voirJournalAudit: ["SUPER_ADMIN", "ADMINISTRATEUR"],
   creerTicket: ["SUPER_ADMIN", "ADMINISTRATEUR", "TECHNICIEN", "CLIENT"],
 } satisfies Record<string, Role[]>;
