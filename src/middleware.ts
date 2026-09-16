@@ -16,7 +16,7 @@ export function middleware(request: NextRequest) {
   }
 
   if (aUneSession && surLogin) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    return NextResponse.redirect(new URL("/routeurs", request.url));
   }
 
   return NextResponse.next();

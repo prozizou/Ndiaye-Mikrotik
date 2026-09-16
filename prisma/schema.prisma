@@ -1,137 +1,59 @@
 // prisma/schema.prisma
-// MVP — Plateforme d'assistance MikroTik à distance
+// Ndiaye Mikrotik — base volontairement réduite au strict nécessaire :
+// ajouter un routeur (IP + identifiant + mot de passe) et l'authentification.
+// Tout le reste (tickets, diagnostics, interventions, sauvegardes, clients,
+// sites, audit, alertes...) a existé dans une version précédente de ce
+// projet — voir l'historique git — et sera réintroduit progressivement,
+// une fonctionnalité à la fois, plutôt que reconstruit d'un bloc.
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
   // DATABASE_URL : chaîne Accelerate (prisma+postgres://...) utilisée par
   // l'appli à l'exécution — passe par le pooling/cache géré par Prisma.
   // DIRECT_URL : connexion Postgres directe, utilisée uniquement par le CLI
   // (migrate, db push, studio) car Accelerate ne peut pas exécuter de
   // migrations. Voir .env.example.
+  provider  = "postgresql"
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
-
-// ---------------------------------------------------------------------------
-// Auth & utilisateurs
-// ---------------------------------------------------------------------------
 
 enum Role {
   SUPER_ADMIN
   ADMINISTRATEUR
   TECHNICIEN
+  // Le modèle Client a disparu avec cette simplification (voir historique
+  // git) — ce rôle n'a donc plus de portée particulière pour l'instant,
+  // mais on le garde dans l'enum : le retirer casserait le déploiement si
+  // une ligne existante l'utilise encore (Postgres refuse de supprimer une
+  // valeur d'enum en cours d'usage).
   CLIENT
 }
 
 model Utilisateur {
-  id            String   @id @default(cuid())
-  email         String   @unique
-  // Identifiant du compte Firebase Auth — Postgres reste la source de
-  // vérité pour le rôle et le clientId, Firebase ne fait que l'authentification.
-  firebaseUid   String   @unique
-  nom           String
-  role          Role
-  actif         Boolean  @default(true)
-  creeLe        DateTime @default(now())
-
-  // Un utilisateur "CLIENT" est rattaché à une fiche client
-  client        Client?  @relation(fields: [clientId], references: [id])
-  clientId      String?
-
-  ticketsAssignes      Ticket[]        @relation("TechnicienTickets")
-  interventions        Intervention[]  @relation("TechnicienInterventions")
-  journalAudit         JournalAudit[]
-  alertesAcquittees    Alerte[]
-  sauvegardesDeclenchees SauvegardeRouteur[]
-
-  @@index([clientId])
-}
-
-// ---------------------------------------------------------------------------
-// Clients & sites
-// ---------------------------------------------------------------------------
-
-model Client {
   id          String   @id @default(cuid())
+  email       String   @unique
+  // Identifiant du compte Firebase Auth — Postgres reste la source de
+  // vérité pour le rôle, Firebase ne fait que l'authentification.
+  firebaseUid String   @unique
   nom         String
-  telephone   String?
-  email       String?
-  adresse     String?
+  role        Role
+  actif       Boolean  @default(true)
   creeLe      DateTime @default(now())
-
-  utilisateurs Utilisateur[]
-  sites        Site[]
-  tickets      Ticket[]
-
-  @@index([nom])
-}
-
-model Site {
-  id        String   @id @default(cuid())
-  nom       String
-  adresse   String?
-  client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  clientId  String
-
-  routeurs  Routeur[]
-
-  @@index([clientId])
-}
-
-// ---------------------------------------------------------------------------
-// Routeurs MikroTik
-// ---------------------------------------------------------------------------
-
-enum EtatVpn {
-  CONNECTE
-  DECONNECTE
-  JAMAIS_CONNECTE
 }
 
 model Routeur {
-  id              String   @id @default(cuid())
-  nom             String
-  modele          String?
-  versionRouterOs String?
-  numeroSerie     String?  @unique
+  id     String   @id @default(cuid())
+  nom    String
+  // IP joignable par la passerelle (réseau VPN) — voir gateway/README.md.
+  // Jamais exposée telle quelle côté client de l'API publique.
+  ipVpn  String   @unique
+  creeLe DateTime @default(now())
 
-  site            Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
-  siteId          String
-
-  // Réseau VPN — jamais exposé tel quel côté client de l'API publique
-  ipVpn           String   @unique
-  // Informatif seulement : le pair WireGuard réel est ajouté à la main côté
-  // passerelle (voir gateway/README.md), cette valeur ne configure rien
-  // automatiquement. Optionnel pour ne pas bloquer une connexion rapide
-  // (routeurs/connexion-rapide) quand on ne l'a pas sous la main.
-  clePubliqueWg   String?
-  cleServeurWgId  String?  // référence à la conf serveur WireGuard, pas la clé privée du routeur
-
-  etatVpn         EtatVpn  @default(JAMAIS_CONNECTE)
-  enLigne         Boolean  @default(false)
-  derniereCommunication DateTime?
-
-  // Dernier relevé de supervision (mis à jour par le monitoring.service)
-  cpuPourcent     Int?
-  ramPourcent     Int?
-  uptimeSecondes  Int?
-
-  creeLe          DateTime @default(now())
-
-  tickets         Ticket[]
-  diagnostics     Diagnostic[]
-  interventions   Intervention[]
-  journalAudit    JournalAudit[]
-  alertes         Alerte[]
-  secret          RouteurSecret?
-  sauvegardes     SauvegardeRouteur[]
-
-  @@index([siteId])
-  @@index([enLigne])
+  secret RouteurSecret?
 }
 
 // Identifiants API MikroTik, chiffrés (AES-256-GCM) — table à ne jamais
@@ -145,278 +67,4 @@ model RouteurSecret {
   motDePasseChiffre String
 
   @@map("routeur_secrets")
-}
-
-// ---------------------------------------------------------------------------
-// Tickets d'assistance
-// ---------------------------------------------------------------------------
-
-enum StatutTicket {
-  NOUVEAU
-  ASSIGNE
-  DIAGNOSTIC
-  INTERVENTION
-  EN_ATTENTE_CLIENT
-  RESOLU
-  FERME
-}
-
-enum CategorieTicket {
-  INTERNET_COUPE
-  INTERNET_LENT
-  WIFI_INACCESSIBLE
-  DNS
-  APPAREIL_NON_CONNECTE
-  HOTSPOT
-  VPN
-  AUTRE
-}
-
-enum PrioriteTicket {
-  BASSE
-  NORMALE
-  HAUTE
-  URGENTE
-}
-
-model Ticket {
-  id            String          @id @default(cuid())
-  numero        String          @unique // ex: T-2231, généré applicativement
-  sujet         String
-  description   String?
-  categorie     CategorieTicket
-  priorite      PrioriteTicket  @default(NORMALE)
-  statut        StatutTicket    @default(NOUVEAU)
-
-  client        Client          @relation(fields: [clientId], references: [id])
-  clientId      String
-
-  routeur       Routeur?        @relation(fields: [routeurId], references: [id])
-  routeurId     String?
-
-  technicien    Utilisateur?    @relation("TechnicienTickets", fields: [technicienId], references: [id])
-  technicienId  String?
-
-  creeLe        DateTime        @default(now())
-  // Calculée à la création depuis la priorité (voir lib/tickets/sla.ts) —
-  // pas recalculée si la priorité change ensuite.
-  echeanceSla   DateTime?
-  resoluLe      DateTime?
-  fermeLe       DateTime?
-
-  diagnostics   Diagnostic[]
-  interventions Intervention[]
-
-  @@index([clientId])
-  @@index([routeurId])
-  @@index([statut])
-}
-
-// ---------------------------------------------------------------------------
-// Diagnostics
-// ---------------------------------------------------------------------------
-
-enum SeveriteDiagnostic {
-  FAIBLE
-  MOYENNE
-  CRITIQUE
-}
-
-model Diagnostic {
-  id            String   @id @default(cuid())
-  routeur       Routeur  @relation(fields: [routeurId], references: [id])
-  routeurId     String
-
-  ticket        Ticket?  @relation(fields: [ticketId], references: [id])
-  ticketId      String?
-
-  // Résultats des contrôles MVP : ping, DNS, WAN
-  pingOk        Boolean?
-  dnsOk         Boolean?
-  wanOk         Boolean?
-  // Mesurés sur le ping WAN de ce diagnostic — null si le format de
-  // réponse RouterOS n'a pas pu être interprété (voir diagnostic.service.ts).
-  latenceMs         Float?
-  perteWanPourcent  Float?
-
-  problemeProbable String?
-  severite      SeveriteDiagnostic?
-
-  lanceLe       DateTime @default(now())
-
-  @@index([routeurId])
-  @@index([ticketId])
-}
-
-// ---------------------------------------------------------------------------
-// Alertes
-// ---------------------------------------------------------------------------
-// Ouvertes/refermées par lancerDiagnostic() selon des seuils fixes (voir
-// lib/monitoring/seuils.ts) — au prochain diagnostic lancé sur ce routeur,
-// qu'il soit déclenché à la main ou par la supervision périodique (Phase 7,
-// /api/cron/diagnostics). Voir ce endpoint pour la fréquence réelle : pas
-// un vrai temps réel, un passage régulier.
-
-enum NiveauAlerte {
-  AVERTISSEMENT
-  CRITIQUE
-}
-
-enum TypeAlerte {
-  ROUTEUR_INJOIGNABLE
-  WAN_INDISPONIBLE
-  DNS_INSTABLE
-  CPU_ELEVE
-  LATENCE_ELEVEE
-}
-
-model Alerte {
-  id              String       @id @default(cuid())
-  routeur         Routeur      @relation(fields: [routeurId], references: [id], onDelete: Cascade)
-  routeurId       String
-
-  type            TypeAlerte
-  niveau          NiveauAlerte
-  message         String
-  // Valeur qui a déclenché le seuil (% CPU, ms de latence...) — contexte
-  // pour l'affichage, pas utilisée pour la logique elle-même.
-  valeurMesuree   Float?
-
-  creeLe          DateTime     @default(now())
-  // Refermée automatiquement quand la condition n'est plus vraie au
-  // diagnostic suivant — jamais par une action manuelle.
-  resolueLe       DateTime?
-
-  // Acquittement : un humain a vu l'alerte et la prend en charge, distinct
-  // de la résolution automatique de la condition sous-jacente.
-  acquitteePar    Utilisateur? @relation(fields: [acquitteeParId], references: [id])
-  acquitteeParId  String?
-  acquitteeLe     DateTime?
-
-  @@index([routeurId])
-  @@index([resolueLe])
-}
-
-// ---------------------------------------------------------------------------
-// Interventions
-// ---------------------------------------------------------------------------
-
-enum TypeIntervention {
-  TEST_INTERNET
-  TEST_DNS
-  TEST_GATEWAY
-  TEST_DHCP
-  VERIFIER_WIFI
-  RENOUVELER_CONNEXION
-  REDEMARRER_INTERFACE
-  SAUVEGARDER_CONFIGURATION
-  REDEMARRER_ROUTEUR
-  AUTRE
-}
-
-enum ResultatIntervention {
-  SUCCES
-  ECHEC
-  ANNULE
-}
-
-model Intervention {
-  id              String                @id @default(cuid())
-  type            TypeIntervention
-  routeur         Routeur               @relation(fields: [routeurId], references: [id])
-  routeurId       String
-
-  ticket          Ticket?               @relation(fields: [ticketId], references: [id])
-  ticketId        String?
-
-  technicien      Utilisateur           @relation("TechnicienInterventions", fields: [technicienId], references: [id])
-  technicienId    String
-
-  // Sauvegarde prise juste avant cette intervention (voir SauvegardeRouteur
-  // et sauvegarde.service.ts) — présente seulement pour les interventions
-  // passées par executerAvecProtection(), pas pour les tests en lecture seule.
-  sauvegarde      SauvegardeRouteur?
-
-  resultat        ResultatIntervention?
-  details         String?
-
-  demarreeLe      DateTime              @default(now())
-  terminaLe       DateTime?
-
-  @@index([routeurId])
-  @@index([ticketId])
-}
-
-// ---------------------------------------------------------------------------
-// Sauvegardes & rollback
-// ---------------------------------------------------------------------------
-// Fondation de sécurité avant toute modification sensible d'un routeur —
-// manuelle aujourd'hui (bouton "Sauvegarder"), pilotée par l'IA plus tard
-// (Phase 11) sans que ce modèle ait besoin de changer. Le mécanisme de
-// restauration est celui, natif, de RouterOS (/system/backup/save et
-// /system/backup/load) : on ne tente jamais de "défaire" une modification
-// commande par commande, on revient à un instantané complet, validé par
-// RouterOS lui-même. Voir sauvegarde.service.ts.
-
-enum StatutSauvegarde {
-  DISPONIBLE
-  RESTAUREE
-  ECHEC
-}
-
-model SauvegardeRouteur {
-  id              String   @id @default(cuid())
-  routeur         Routeur  @relation(fields: [routeurId], references: [id], onDelete: Cascade)
-  routeurId       String
-
-  // Nom du fichier .backup créé par /system/backup/save. Reste stocké sur le
-  // routeur lui-même pour ce MVP — le rapatrier vers un stockage central
-  // (S3, etc.) est une amélioration à ajouter ensuite, pas un blocage : voir
-  // la note dans creerSauvegarde().
-  nomFichier      String
-
-  // Pourquoi cette sauvegarde a été prise, ex. "Avant intervention :
-  // Redémarrage du routeur" — sert à afficher une liste lisible, pas
-  // seulement un horodatage.
-  raison          String
-
-  declenchePar    Utilisateur @relation(fields: [declencheeParId], references: [id])
-  declencheeParId String
-
-  // Présent uniquement quand la sauvegarde a été prise via
-  // executerAvecProtection() dans le cadre d'une intervention suivie.
-  intervention    Intervention? @relation(fields: [interventionId], references: [id])
-  interventionId  String?  @unique
-
-  statut          StatutSauvegarde @default(DISPONIBLE)
-  restaureeLe     DateTime?
-
-  creeLe          DateTime @default(now())
-
-  @@index([routeurId])
-}
-
-// ---------------------------------------------------------------------------
-// Journal d'audit
-// ---------------------------------------------------------------------------
-
-model JournalAudit {
-  id              String   @id @default(cuid())
-
-  utilisateur     Utilisateur @relation(fields: [utilisateurId], references: [id])
-  utilisateurId   String
-
-  routeur         Routeur? @relation(fields: [routeurId], references: [id])
-  routeurId       String?
-
-  action          String   // ex: "Modification DNS", "Redémarrage routeur"
-  ancienneValeur  String?
-  nouvelleValeur  String?
-  resultat        String?  // ex: "Succès" / "Échec"
-
-  horodatage      DateTime @default(now())
-
-  @@index([utilisateurId])
-  @@index([routeurId])
-  @@index([horodatage])
 }

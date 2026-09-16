@@ -1,27 +1,18 @@
 // src/components/layout/app-shell.tsx
-// Navigation à 5 entrées (Accueil / Routeurs / Assistance / Tickets / Plus) —
-// barre inférieure fixe sur mobile (pattern natif, plus découvrable qu'un
-// menu hamburger), barre latérale sur desktop. Les deux lisent la même
-// liste NAVIGATION pour ne jamais diverger.
+// Navigation réduite à 2 entrées (Routeurs / Plus) le temps que le reste
+// revienne progressivement — barre inférieure fixe sur mobile (pattern
+// natif, plus découvrable qu'un menu hamburger), barre latérale sur
+// desktop. Les deux lisent la même liste NAVIGATION pour ne jamais diverger.
 
 "use client";
 
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import {
-  IconeAccueil,
-  IconeAssistance,
-  IconePlus,
-  IconeRouteurs,
-  IconeTickets,
-} from "./nav-icons";
+import { IconePlus, IconeRouteurs } from "./nav-icons";
 
 const NAVIGATION = [
-  { href: "/dashboard", label: "Accueil", Icone: IconeAccueil },
   { href: "/routeurs", label: "Routeurs", Icone: IconeRouteurs },
-  { href: "/assistance", label: "Assistance", Icone: IconeAssistance },
-  { href: "/tickets", label: "Tickets", Icone: IconeTickets },
   { href: "/plus", label: "Plus", Icone: IconePlus },
 ] as const;
 

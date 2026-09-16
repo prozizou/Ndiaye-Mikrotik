@@ -3,8 +3,8 @@
 // navigation échoue faute de réseau. Volontairement statique et légère :
 // elle doit pouvoir être mise en cache telle quelle à l'installation du
 // service worker, sans dépendre de Prisma ni d'une session valide — les
-// données du parc (routeurs, tickets, diagnostics) ne sont jamais mises en
-// cache, donc cette page ne peut rien afficher de plus qu'un message.
+// données du parc (routeurs, identifiants) ne sont jamais mises en cache,
+// donc cette page ne peut rien afficher de plus qu'un message.
 
 import Link from "next/link";
 import { NetworkMotif } from "@/components/layout/network-motif";
@@ -23,9 +23,9 @@ export default function PageHorsConnexion() {
         <span className="inline-block h-1.5 w-1.5 rounded-full bg-critical" aria-hidden="true" />
         <h1 className="font-display text-xl font-semibold tracking-tight">Hors connexion</h1>
         <p className="text-sm text-ink-muted">
-          Ndiaye Mikrotik a besoin du réseau pour diagnostiquer et intervenir sur le
-          parc en temps réel — par sécurité, aucune donnée de routeur, ticket
-          ou audit n'est jamais conservée hors ligne sur cet appareil.
+          Ndiaye Mikrotik a besoin du réseau pour accéder au parc en temps réel — par
+          sécurité, aucune donnée de routeur n'est jamais conservée hors ligne sur cet
+          appareil.
         </p>
         <p className="text-sm text-ink-muted">
           Reconnectez-vous puis réessayez.

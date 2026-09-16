@@ -1,11 +1,11 @@
 {
-  "id": "/dashboard",
+  "id": "/routeurs",
   "name": "Ndiaye Mikrotik — Centre d'assistance MikroTik",
   "short_name": "Ndiaye Mikrotik",
-  "description": "Supervision et assistance à distance du parc MikroTik : diagnostics, interventions et suivi des tickets.",
+  "description": "Gestion à distance du parc MikroTik.",
   "lang": "fr",
   "dir": "ltr",
-  "start_url": "/dashboard",
+  "start_url": "/routeurs",
   "scope": "/",
   "display": "standalone",
   "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
@@ -21,21 +21,9 @@
   ],
   "shortcuts": [
     {
-      "name": "Nouveau ticket",
-      "short_name": "Nouveau ticket",
-      "url": "/tickets/nouveau",
-      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
-    },
-    {
-      "name": "Routeurs",
-      "short_name": "Routeurs",
-      "url": "/routeurs",
-      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
-    },
-    {
-      "name": "Journal d'audit",
-      "short_name": "Audit",
-      "url": "/audit",
+      "name": "Ajouter un routeur",
+      "short_name": "Ajouter",
+      "url": "/routeurs/connexion-rapide",
       "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
     }
   ]

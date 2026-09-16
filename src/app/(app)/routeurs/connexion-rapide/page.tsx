@@ -1,8 +1,7 @@
 // src/app/routeurs/connexion-rapide/page.tsx
-// Porte d'entrée simplifiée : IP + identifiant + mot de passe, rien d'autre.
-// Une fois validé, on atterrit directement sur la fiche du routeur avec un
-// premier diagnostic déjà lancé (voir actions.ts) — le chemin le plus court
-// entre "j'ai un routeur" et "je vois ce qui ne va pas".
+// Unique porte d'entrée de l'app pour l'instant : IP + identifiant + mot de
+// passe, rien d'autre. Diagnostic et intervention reviendront
+// progressivement (voir prisma/schema.prisma).
 
 import { exigerRole, ErreurAcces } from "@/lib/permissions/permissions";
 import { connexionRapide } from "./actions";
@@ -23,10 +22,9 @@ export default async function PageConnexionRapide() {
   return (
     <form action={connexionRapide} className="mx-auto max-w-md space-y-3 p-4">
       <div>
-        <h1 className="font-display text-lg font-semibold tracking-tight">Connexion rapide</h1>
+        <h1 className="font-display text-lg font-semibold tracking-tight">Ajouter un routeur</h1>
         <p className="mt-1 text-sm text-ink-muted">
-          Adresse IP, identifiant, mot de passe — le strict nécessaire pour accéder au MikroTik et
-          voir ce qui ne va pas.
+          Adresse IP, identifiant, mot de passe — le strict nécessaire pour l&apos;instant.
         </p>
       </div>
 
@@ -50,12 +48,11 @@ export default async function PageConnexionRapide() {
         type="submit"
         className="w-full border border-brand bg-brand/10 px-3 py-2 text-sm font-medium text-ink hover:bg-brand/20"
       >
-        Se connecter et diagnostiquer
+        Ajouter
       </button>
 
       <p className="text-xs text-ink-faint">
-        L'IP doit être joignable par la passerelle (réseau VPN) — voir gateway/README.md. Un
-        diagnostic est lancé automatiquement juste après la connexion.
+        L&apos;IP doit être joignable par la passerelle (réseau VPN) — voir gateway/README.md.
       </p>
     </form>
   );

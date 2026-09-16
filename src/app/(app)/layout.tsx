@@ -1,6 +1,7 @@
 // src/app/(app)/layout.tsx
-// Place dashboard/, routeurs/, tickets/ et audit/ SOUS ce groupe (app)/ pour
-// qu'ils héritent automatiquement de la sidebar — voir note d'explication.
+// Place routeurs/ et plus/ SOUS ce groupe (app)/ pour qu'ils héritent
+// automatiquement de la sidebar — les autres sections (tickets, audit,
+// assistance...) reviendront progressivement au même endroit.
 
 import { AppShell } from "@/components/layout/app-shell";
 
