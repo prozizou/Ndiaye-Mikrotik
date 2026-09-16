@@ -45,7 +45,7 @@ export default async function PageNouveauRouteur() {
       <hr className="border-border/70" />
 
       <input name="ipVpn" placeholder="IP VPN (ex: 10.100.0.24)" required className={CHAMP} />
-      <input name="clePubliqueWg" placeholder="Clé publique WireGuard du routeur" required className={CHAMP} />
+      <input name="clePubliqueWg" placeholder="Clé publique WireGuard du routeur (facultatif)" className={CHAMP} />
 
       <hr className="border-border/70" />
 

@@ -22,10 +22,10 @@ export async function creerRouteur(formData: FormData) {
   const siteId = String(formData.get("siteId"));
   const nom = String(formData.get("nom"));
   const ipVpn = String(formData.get("ipVpn"));
-  const clePubliqueWg = String(formData.get("clePubliqueWg"));
   const utilisateurApi = String(formData.get("utilisateurApi"));
   const motDePasseApi = String(formData.get("motDePasseApi"));
 
+  const clePubliqueWg = optionnel(formData.get("clePubliqueWg"));
   const modele = optionnel(formData.get("modele"));
   const versionRouterOs = optionnel(formData.get("versionRouterOs"));
   const numeroSerie = optionnel(formData.get("numeroSerie"));

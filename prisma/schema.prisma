@@ -104,7 +104,11 @@ model Routeur {
 
   // Réseau VPN — jamais exposé tel quel côté client de l'API publique
   ipVpn           String   @unique
-  clePubliqueWg   String
+  // Informatif seulement : le pair WireGuard réel est ajouté à la main côté
+  // passerelle (voir gateway/README.md), cette valeur ne configure rien
+  // automatiquement. Optionnel pour ne pas bloquer une connexion rapide
+  // (routeurs/connexion-rapide) quand on ne l'a pas sous la main.
+  clePubliqueWg   String?
   cleServeurWgId  String?  // référence à la conf serveur WireGuard, pas la clé privée du routeur
 
   etatVpn         EtatVpn  @default(JAMAIS_CONNECTE)

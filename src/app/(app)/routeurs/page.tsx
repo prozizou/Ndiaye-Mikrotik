@@ -21,9 +21,17 @@ export default async function PageRouteurs() {
       <div className="flex items-center justify-between">
         <h1 className="font-display text-lg font-semibold tracking-tight">Routeurs</h1>
         {utilisateur.role !== "CLIENT" && (
-          <Link href="/routeurs/nouveau" className="text-sm text-brand-strong hover:underline">
-            Ajouter un routeur
-          </Link>
+          <div className="flex items-center gap-3 text-sm">
+            <Link href="/routeurs/nouveau" className="text-ink-faint hover:underline">
+              Ajout complet
+            </Link>
+            <Link
+              href="/routeurs/connexion-rapide"
+              className="border border-brand bg-brand/10 px-3 py-1.5 font-medium text-ink hover:bg-brand/20"
+            >
+              Connexion rapide
+            </Link>
+          </div>
         )}
       </div>
 
