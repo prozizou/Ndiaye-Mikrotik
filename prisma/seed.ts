@@ -1,6 +1,6 @@
 // prisma/seed.ts
-// Crée le Super Admin et un client de test dans Firebase Auth, puis les
-// lignes Postgres correspondantes liées par firebaseUid.
+// Crée le Super Admin dans Firebase Auth, puis la ligne Postgres
+// correspondante liée par firebaseUid.
 // Lancer avec : npx prisma db seed
 
 import { PrismaClient } from "@prisma/client";
@@ -27,7 +27,6 @@ async function creerOuRecupererCompteFirebase(email: string, nom: string) {
 }
 
 async function main() {
-  // --- Super Admin --------------------------------------------------------
   const compteSuperAdmin = await creerOuRecupererCompteFirebase(
     "ndiayeMikrotik@gmail.com",
     "Ndiaye",
@@ -44,47 +43,8 @@ async function main() {
     },
   });
 
-  // --- Client de test + site + compte de connexion client ----------------
-  const clientTest = await prisma.client.upsert({
-    where: { id: "client-test-seed" },
-    update: {},
-    create: {
-      id: "client-test-seed",
-      nom: "Client de test",
-      email: "prozizou298@gmail.com",
-    },
-  });
-
-  await prisma.site.upsert({
-    where: { id: "site-test-seed" },
-    update: {},
-    create: {
-      id: "site-test-seed",
-      nom: "Site principal",
-      clientId: clientTest.id,
-    },
-  });
-
-  const compteClient = await creerOuRecupererCompteFirebase(
-    "prozizou298@gmail.com",
-    "Client de test",
-  );
-
-  const utilisateurClient = await prisma.utilisateur.upsert({
-    where: { email: "prozizou298@gmail.com" },
-    update: { firebaseUid: compteClient.uid },
-    create: {
-      email: "prozizou298@gmail.com",
-      firebaseUid: compteClient.uid,
-      nom: "Client de test",
-      role: "CLIENT",
-      clientId: clientTest.id,
-    },
-  });
-
   console.log("Seed terminé :");
   console.log(`  Super Admin : ${superAdmin.email} / ${MOT_DE_PASSE_TEMPORAIRE}`);
-  console.log(`  Client      : ${utilisateurClient.email} / ${MOT_DE_PASSE_TEMPORAIRE}`);
   console.log("  -> à changer dès la première connexion.");
 }
 

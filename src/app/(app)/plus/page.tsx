@@ -1,16 +1,20 @@
 // src/app/(app)/plus/page.tsx
-// Hub des sections secondaires. Regroupe ce qui existe déjà (journal
-// d'audit) et annonce honnêtement ce qui ne l'est pas encore (Clients,
-// Techniciens, VPN, Paramètres) plutôt que de pointer vers des pages
-// vides — voir ANALYSE-FAIBLESSES-AMELIORATIONS.md pour le principe.
+// Hub des sections secondaires. Presque tout annonce honnêtement "Bientôt"
+// pour l'instant — le gros du produit revient progressivement (voir
+// prisma/schema.prisma) plutôt que d'être reconstruit d'un bloc.
 
-import Link from "next/link";
-import { utilisateurConnecte, peut } from "@/lib/permissions/permissions";
+import { utilisateurConnecte } from "@/lib/permissions/permissions";
 import { DeconnexionBouton } from "./deconnexion-bouton";
+
+const LIBELLE_ROLE: Record<string, string> = {
+  SUPER_ADMIN: "Super admin",
+  ADMINISTRATEUR: "Administrateur",
+  TECHNICIEN: "Technicien",
+  CLIENT: "Client",
+};
 
 export default async function PagePlus() {
   const utilisateur = await utilisateurConnecte();
-  const voitAudit = await peut("voirJournalAudit");
 
   return (
     <div className="mx-auto max-w-2xl space-y-6 p-4">
@@ -21,37 +25,16 @@ export default async function PagePlus() {
         </p>
       </div>
 
-      <section className="divide-y divide-border/70 border border-border/70 bg-surface">
-        {voitAudit && (
-          <CarteLien href="/audit" titre="Journal d'audit" description="Historique des actions sensibles" />
-        )}
-        <CarteBientot titre="Clients" description="Fiches clients, sites et contacts" />
-        <CarteBientot titre="Techniciens" description="Équipe technique et disponibilité" />
-        <CarteBientot titre="VPN" description="Tunnels WireGuard et supervision réseau" />
+      <section className="divide-y divide-border/70 rounded-xl border border-border/70 bg-surface shadow-sm">
+        <CarteBientot titre="Diagnostic & intervention" description="Analyser et agir sur un routeur" />
+        <CarteBientot titre="Tickets" description="Suivi des demandes d'assistance" />
+        <CarteBientot titre="Clients & sites" description="Organisation multi-client" />
+        <CarteBientot titre="Journal d'audit" description="Historique des actions sensibles" />
         <CarteBientot titre="Paramètres" description="Préférences et configuration du compte" />
       </section>
 
       <DeconnexionBouton />
     </div>
-  );
-}
-
-const LIBELLE_ROLE: Record<string, string> = {
-  SUPER_ADMIN: "Super admin",
-  ADMINISTRATEUR: "Administrateur",
-  TECHNICIEN: "Technicien",
-  CLIENT: "Client",
-};
-
-function CarteLien({ href, titre, description }: { href: string; titre: string; description: string }) {
-  return (
-    <Link href={href} className="flex items-center justify-between px-4 py-3.5 hover:bg-surface-raised">
-      <div>
-        <div className="text-sm text-ink">{titre}</div>
-        <div className="text-xs text-ink-muted">{description}</div>
-      </div>
-      <span className="text-ink-faint">→</span>
-    </Link>
   );
 }
 

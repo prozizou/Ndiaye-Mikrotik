@@ -35,7 +35,7 @@ export default function PageConnexion() {
 
       if (!reponse.ok) throw new Error("Session refusée");
 
-      router.push("/dashboard");
+      router.push("/routeurs");
       router.refresh();
     } catch {
       setErreur("Email ou mot de passe incorrect");
