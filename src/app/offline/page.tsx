@@ -11,7 +11,7 @@ import { NetworkMotif } from "@/components/layout/network-motif";
 import { ReessayerBouton } from "./reessayer-bouton";
 
 export const metadata = {
-  title: "Hors connexion — MikroAssist",
+  title: "Hors connexion — Ndiaye Mikrotik",
 };
 
 export default function PageHorsConnexion() {
@@ -23,7 +23,7 @@ export default function PageHorsConnexion() {
         <span className="inline-block h-1.5 w-1.5 rounded-full bg-critical" aria-hidden="true" />
         <h1 className="font-display text-xl font-semibold tracking-tight">Hors connexion</h1>
         <p className="text-sm text-ink-muted">
-          MikroAssist a besoin du réseau pour diagnostiquer et intervenir sur le
+          Ndiaye Mikrotik a besoin du réseau pour diagnostiquer et intervenir sur le
           parc en temps réel — par sécurité, aucune donnée de routeur, ticket
           ou audit n'est jamais conservée hors ligne sur cet appareil.
         </p>

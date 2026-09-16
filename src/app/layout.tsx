@@ -20,17 +20,17 @@ const ibmPlexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "MikroAssist — Centre d'assistance MikroTik",
+  title: "Ndiaye Mikrotik — Centre d'assistance MikroTik",
   description: "Supervision et assistance à distance du parc MikroTik",
-  applicationName: "MikroAssist",
+  applicationName: "Ndiaye Mikrotik",
   manifest: "/manifest.webmanifest",
   // PWA installable (Android/desktop via l'invite personnalisée dans
   // pwa-client.tsx, iOS via "Sur l'écran d'accueil") — voir public/sw.js
   // pour la stratégie de cache (network-first, rien de sensible persisté).
   appleWebApp: {
     capable: true,
-    statusBarStyle: "black-translucent",
-    title: "MikroAssist",
+    statusBarStyle: "default",
+    title: "Ndiaye Mikrotik",
   },
   formatDetection: { telephone: false },
   icons: {
@@ -41,12 +41,12 @@ export const metadata: Metadata = {
       { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
     ],
     apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
-    other: [{ rel: "mask-icon", url: "/icons/safari-pinned-tab.svg", color: "#6c7bf5" }],
+    other: [{ rel: "mask-icon", url: "/icons/safari-pinned-tab.svg", color: "#2563eb" }],
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0e141b",
+  themeColor: "#eef2f8",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",

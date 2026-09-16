@@ -1,7 +1,7 @@
 {
   "id": "/dashboard",
-  "name": "MikroAssist — Centre d'assistance MikroTik",
-  "short_name": "MikroAssist",
+  "name": "Ndiaye Mikrotik — Centre d'assistance MikroTik",
+  "short_name": "Ndiaye Mikrotik",
   "description": "Supervision et assistance à distance du parc MikroTik : diagnostics, interventions et suivi des tickets.",
   "lang": "fr",
   "dir": "ltr",
@@ -9,8 +9,8 @@
   "scope": "/",
   "display": "standalone",
   "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
-  "background_color": "#0e141b",
-  "theme_color": "#0e141b",
+  "background_color": "#eef2f8",
+  "theme_color": "#2563eb",
   "categories": ["business", "utilities", "productivity"],
   "icons": [
     { "src": "/icons/favicon-32.png", "sizes": "32x32", "type": "image/png", "purpose": "any" },

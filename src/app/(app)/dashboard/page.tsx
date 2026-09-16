@@ -207,37 +207,30 @@ export default async function DashboardPage() {
 
   return (
     <div>
-      {/* En-tête avec le motif réseau en filigrane */}
-      <div className="relative overflow-hidden border-b border-border/70 px-6 py-8 md:px-10 md:py-12">
-        <NetworkMotif className="pointer-events-none absolute -right-10 -top-6 h-40 w-[420px] text-border-strong opacity-60 md:h-48 md:w-[520px]" />
+      {/* En-tête — bandeau de marque, dégradé bleu Ndiaye Mikrotik */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-brand to-brand-strong px-6 py-8 text-white md:px-10 md:py-12">
+        <NetworkMotif className="pointer-events-none absolute -right-10 -top-6 h-40 w-[420px] text-white opacity-10 md:h-48 md:w-[520px]" />
         <div className="relative">
-          <p className="text-sm text-ink-muted">Vue d&apos;ensemble</p>
+          <p className="text-sm text-white/70">Vue d&apos;ensemble</p>
           <h1 className="mt-1 font-display text-2xl font-semibold tracking-tight md:text-3xl">
             Centre d&apos;assistance
           </h1>
-          <div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-2 text-[13px]">
-            <span className="text-ink-muted">
-              <span className="font-mono">{totalRouteurs}</span> routeurs
-            </span>
-            <span className="flex items-center gap-2 text-signal">
-              <Pastille couleur="bg-signal" /> <span className="font-mono">{routeursEnLigne.length}</span> en ligne
-            </span>
-            <span className="flex items-center gap-2 text-critical">
-              <Pastille couleur="bg-critical" /> <span className="font-mono">{routeursHorsLigne.length}</span> hors
-              ligne
-            </span>
-            <span className="text-ink-muted">
-              <span className="font-mono">{ticketsOuverts.length}</span> tickets ouverts
-            </span>
-          </div>
         </div>
       </div>
 
       <div className="mx-auto max-w-4xl space-y-8 px-6 py-8 md:px-10">
+        {/* Tuiles de synthèse — un coup d'œil suffit */}
+        <section className="-mt-14 grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
+          <StatTuile libelle="Routeurs" valeur={totalRouteurs} accent="bg-brand" />
+          <StatTuile libelle="En ligne" valeur={routeursEnLigne.length} accent="bg-signal" />
+          <StatTuile libelle="Hors ligne" valeur={routeursHorsLigne.length} accent="bg-critical" />
+          <StatTuile libelle="Tickets ouverts" valeur={ticketsOuverts.length} accent="bg-warning" />
+        </section>
+
         {/* À traiter maintenant — avant toute statistique secondaire */}
         <section>
           <h2 className="mb-3 text-sm text-ink-muted">À traiter maintenant</h2>
-          <div className="divide-y divide-border/70 border border-border/70 bg-surface">
+          <div className="divide-y divide-border/70 overflow-hidden rounded-xl border border-border/70 bg-surface shadow-sm">
             {aTraiter.map((item) => (
               <div key={item.cle} className="flex items-center justify-between gap-4 px-4 py-3 hover:bg-surface-raised">
                 <Link href={item.href} className="flex min-w-0 items-center gap-3">
@@ -278,7 +271,7 @@ export default async function DashboardPage() {
         </section>
 
         {/* Disponibilité — métrique héro */}
-        <section className="border border-border/70 bg-surface p-5">
+        <section className="rounded-xl border border-border/70 bg-surface p-5 shadow-sm">
           <div className="flex items-end justify-between">
             <span className="text-sm text-ink-muted">Disponibilité du parc</span>
             {disponibilite !== null ? (
@@ -289,9 +282,9 @@ export default async function DashboardPage() {
               <span className="text-sm text-ink-faint">Aucun routeur enregistré</span>
             )}
           </div>
-          <div className="mt-3 h-1 w-full overflow-hidden rounded-full bg-border">
+          <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-border">
             <div
-              className="h-full rounded-full bg-signal"
+              className="h-full rounded-full bg-signal transition-all"
               style={{ width: `${disponibilite ?? 0}%` }}
             />
           </div>
@@ -302,7 +295,7 @@ export default async function DashboardPage() {
             réguliers, mais pas encore assez profond ni exploité pour un
             vrai graphique de disponibilité dans le temps. */}
         <section className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div className="border border-border/70 bg-surface p-4">
+          <div className="rounded-xl border border-border/70 bg-surface p-4 shadow-sm">
             <span className="text-xs text-ink-muted">Résolution moyenne (7 j)</span>
             <div className="mt-1 font-display text-xl font-semibold text-ink">
               {resolutionMoyenne !== null ? formatDuree(resolutionMoyenne) : "—"}
@@ -313,7 +306,7 @@ export default async function DashboardPage() {
                 : "aucun ticket résolu sur 7 jours"}
             </div>
           </div>
-          <div className="border border-border/70 bg-surface p-4">
+          <div className="rounded-xl border border-border/70 bg-surface p-4 shadow-sm">
             <div className="flex items-baseline justify-between">
               <span className="text-xs text-ink-muted">Tickets créés / jour</span>
               <span className="font-mono text-sm text-ink">{serieTickets.at(-1)}</span>
@@ -330,7 +323,7 @@ export default async function DashboardPage() {
               Tout voir
             </Link>
           </div>
-          <div className="divide-y divide-border/70 border border-border/70 bg-surface">
+          <div className="divide-y divide-border/70 overflow-hidden rounded-xl border border-border/70 bg-surface shadow-sm">
             {tickets.slice(0, 5).map((t) => (
               <Link
                 key={t.id}
@@ -356,6 +349,14 @@ export default async function DashboardPage() {
   );
 }
 
-function Pastille({ couleur }: { couleur: string }) {
-  return <span className={`inline-block h-1.5 w-1.5 rounded-full ${couleur}`} />;
+function StatTuile({ libelle, valeur, accent }: { libelle: string; valeur: number; accent: string }) {
+  return (
+    <div className="overflow-hidden rounded-xl border border-border/70 bg-surface shadow-sm">
+      <div className={`h-1 ${accent}`} />
+      <div className="p-3.5 md:p-4">
+        <div className="font-display text-2xl font-semibold text-ink md:text-3xl">{valeur}</div>
+        <div className="mt-0.5 text-xs text-ink-muted">{libelle}</div>
+      </div>
+    </div>
+  );
 }
