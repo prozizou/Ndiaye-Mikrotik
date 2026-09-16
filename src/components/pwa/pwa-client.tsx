@@ -130,7 +130,7 @@ export function PwaClient() {
     <>
       {miseAJourDisponible && (
         <div className="fixed inset-x-0 top-0 z-50 flex items-center justify-center gap-3 border-b border-border-strong bg-surface-raised px-4 py-2 text-sm text-ink shadow-lg">
-          <span>Une nouvelle version de MikroAssist est disponible.</span>
+          <span>Une nouvelle version de Ndiaye Mikrotik est disponible.</span>
           <button
             onClick={appliquerMiseAJour}
             className="border border-brand bg-brand/10 px-2.5 py-1 text-xs font-medium text-ink hover:bg-brand/20"
@@ -143,7 +143,7 @@ export function PwaClient() {
       {(invite || afficherHintIOS) && (
         <div className="fixed bottom-4 right-4 z-40 w-72 border border-border-strong bg-surface-raised p-3.5 text-sm text-ink shadow-xl">
           <div className="flex items-start justify-between gap-2">
-            <p className="font-display font-medium">Installer MikroAssist</p>
+            <p className="font-display font-medium">Installer Ndiaye Mikrotik</p>
             <button
               onClick={masquerInvite}
               aria-label="Fermer"

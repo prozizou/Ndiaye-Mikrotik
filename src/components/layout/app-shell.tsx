@@ -7,6 +7,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   IconeAccueil,
@@ -31,15 +32,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-bg text-ink">
       {/* Topbar — mobile uniquement, marque seule : la navigation vit dans
           la barre inférieure, plus aucun menu à ouvrir. */}
-      <header className="flex items-center border-b border-border/70 px-4 py-3 md:hidden">
-        <span className="font-display text-[15px] font-semibold tracking-tight">MikroAssist</span>
+      <header className="flex items-center gap-2 border-b border-border/70 bg-surface px-4 py-3 md:hidden">
+        <Image src="/logo.png" alt="" width={28} height={28} className="rounded-full" priority />
+        <span className="font-display text-[15px] font-semibold tracking-tight">Ndiaye Mikrotik</span>
       </header>
 
       <div className="md:flex">
         <aside className="hidden border-border/70 bg-surface md:sticky md:top-0 md:block md:h-screen md:w-60 md:shrink-0 md:border-r">
-          <div className="px-5 py-6">
-            <span className="font-display text-[17px] font-semibold tracking-tight">
-              MikroAssist
+          <div className="flex items-center gap-2.5 px-5 py-6">
+            <Image src="/logo.png" alt="" width={32} height={32} className="rounded-full" priority />
+            <span className="font-display text-[16px] font-semibold leading-tight tracking-tight">
+              Ndiaye
+              <br />
+              Mikrotik
             </span>
           </div>
 

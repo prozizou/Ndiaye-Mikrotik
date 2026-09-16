@@ -6,6 +6,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { authClient } from "@/lib/firebase/client";
@@ -45,9 +46,22 @@ export default function PageConnexion() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-bg px-4 text-ink">
-      <form onSubmit={connecter} className="w-full max-w-sm space-y-3">
-        <div className="mb-4 text-center">
-          <span className="font-display text-[17px] font-semibold tracking-tight">MikroAssist</span>
+      <form
+        onSubmit={connecter}
+        className="w-full max-w-sm space-y-4 border border-border bg-surface p-8 shadow-sm"
+      >
+        <div className="mb-2 text-center">
+          <Image
+            src="/logo.png"
+            alt="Ndiaye Mikrotik"
+            width={72}
+            height={72}
+            className="mx-auto rounded-full"
+            priority
+          />
+          <span className="mt-3 block font-display text-lg font-semibold tracking-tight">
+            Ndiaye Mikrotik
+          </span>
           <p className="mt-1 text-sm text-ink-muted">Centre d'assistance MikroTik</p>
         </div>
 
@@ -73,7 +87,7 @@ export default function PageConnexion() {
         <button
           type="submit"
           disabled={enCours}
-          className="w-full border border-brand bg-brand/10 px-3 py-2 text-sm font-medium text-ink hover:bg-brand/20 disabled:opacity-50"
+          className="w-full bg-brand px-3 py-2.5 text-sm font-medium text-white hover:bg-brand-strong disabled:opacity-50"
         >
           {enCours ? "Connexion..." : "Se connecter"}
         </button>

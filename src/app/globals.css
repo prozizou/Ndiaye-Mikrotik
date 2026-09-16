@@ -5,25 +5,31 @@
 @tailwind utilities;
 
 :root {
-  --color-bg: #0e141b;
-  --color-surface: #141c25;
-  --color-surface-raised: #1a2430;
-  --color-border: #232e3b;
-  --color-border-strong: #2e3b4a;
+  /* Thème clair professionnel, aligné sur les bleus du logo Ndiaye Mikrotik
+     (remplace l'ancien thème sombre navy). Fond légèrement teinté de bleu
+     plutôt que blanc pur : les panneaux --color-surface (blancs) se
+     détachent nettement dessus, ce qu'un fond #fff uniforme ne permettrait
+     pas. */
+  --color-bg: #eef2f8;
+  --color-surface: #ffffff;
+  --color-surface-raised: #e8eef7;
+  --color-border: #dde5f0;
+  --color-border-strong: #c7d2e2;
 
-  --color-text: #edf2f6;
-  --color-text-muted: #8c99a8;
-  /* Relevé de #5c6b7a : sous ~3.4:1 sur --color-bg, en dessous du seuil AA
-     (4.5:1) pour du texte normal — durées et infos secondaires devenaient
-     illisibles. #76869a tient ~5:1. */
-  --color-text-faint: #76869a;
+  /* Hiérarchie de texte vérifiée sur --color-surface (blanc) : text ~16:1,
+     muted ~7.5:1, faint ~4.6:1 — le palier le plus risqué (faint, pour les
+     infos secondaires) reste au-dessus du seuil AA (4.5:1) pour du texte
+     normal, même leçon que l'ancien thème sombre (voir git blame). */
+  --color-text: #101828;
+  --color-text-muted: #475467;
+  --color-text-faint: #64748b;
 
-  --color-brand: #6c7bf5;
-  --color-brand-strong: #8592f7;
+  --color-brand: #2563eb;
+  --color-brand-strong: #1d4ed8;
 
-  --color-signal: #34d8b8;
-  --color-warning: #f0a94e;
-  --color-critical: #f2665f;
+  --color-signal: #16a34a;
+  --color-warning: #d97706;
+  --color-critical: #dc2626;
 
   --font-display: var(--font-space-grotesk), system-ui, sans-serif;
   --font-mono: var(--font-ibm-plex-mono), ui-monospace, monospace;

@@ -1,5 +1,5 @@
 // public/sw.js
-// Service worker de MikroAssist — stratégie "network-first" partout où des
+// Service worker de Ndiaye Mikrotik — stratégie "network-first" partout où des
 // données peuvent changer, avec repli hors-ligne. Volontairement PAS un
 // cache générique de type "app shell offline complet" : cette appli affiche
 // des données clients sensibles (tickets, routeurs, journal d'audit) et il
@@ -21,7 +21,7 @@
 //   4. Tout le reste (API, RSC payloads, etc.) → laissé passer nativement,
 //      jamais de cache.
 
-const VERSION = "v5";
+const VERSION = "v6";
 const SHELL_CACHE = `mikroassist-shell-${VERSION}`;
 const STATIC_CACHE = `mikroassist-static-${VERSION}`;
 const CACHES_CONNUS = new Set([SHELL_CACHE, STATIC_CACHE]);
