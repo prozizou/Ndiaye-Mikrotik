@@ -2,13 +2,14 @@
 // Point d'entrée unique de l'app pour l'instant : la liste des routeurs
 // ajoutés, et un lien pour en ajouter un nouveau (IP + identifiant + mot de
 // passe, rien d'autre — voir connexion-rapide/).
+//
+// Aucune authentification pour l'instant (retirée volontairement, voir
+// historique git) — à réintroduire plus tard.
 
 import Link from "next/link";
-import { utilisateurConnecte } from "@/lib/permissions/permissions";
 import { listerRouteurs } from "@/services/routeur.service";
 
 export default async function PageRouteurs() {
-  await utilisateurConnecte();
   const routeurs = await listerRouteurs();
 
   return (

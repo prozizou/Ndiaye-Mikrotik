@@ -4,12 +4,9 @@
 // progressivement.
 
 import { notFound } from "next/navigation";
-import { utilisateurConnecte } from "@/lib/permissions/permissions";
 import { obtenirRouteur } from "@/services/routeur.service";
 
 export default async function PageDetailRouteur({ params }: { params: { id: string } }) {
-  await utilisateurConnecte();
-
   const routeur = await obtenirRouteur(params.id);
   if (!routeur) notFound();
 
