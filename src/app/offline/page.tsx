@@ -2,7 +2,7 @@
 // Page de repli servie par le service worker (public/sw.js) quand une
 // navigation échoue faute de réseau. Volontairement statique et légère :
 // elle doit pouvoir être mise en cache telle quelle à l'installation du
-// service worker, sans dépendre de Prisma ni d'une session valide — les
+// service worker, sans dépendre de Firebase RTDB ni d'une session valide — les
 // données du parc (routeurs, identifiants) ne sont jamais mises en cache,
 // donc cette page ne peut rien afficher de plus qu'un message.
 

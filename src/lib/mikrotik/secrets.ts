@@ -1,10 +1,10 @@
 // src/lib/mikrotik/secrets.ts
-// Les identifiants API de chaque routeur sont chiffrés en base (AES-256-GCM)
-// et déchiffrés uniquement ici, côté serveur. Ne jamais `select` la table
-// routeur_secrets depuis un endpoint qui répond au navigateur.
+// Les identifiants API de chaque routeur sont chiffrés (AES-256-GCM) avant
+// d'être écrits dans Firebase RTDB et déchiffrés uniquement ici, côté
+// serveur. Fonctions pures, indépendantes du stockage — voir
+// services/routeur.service.ts pour la lecture/écriture RTDB elle-même.
 
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
-import { prisma } from "@/lib/database/prisma";
 
 const ALGORITHME = "aes-256-gcm";
 
@@ -22,7 +22,8 @@ export function chiffrer(valeur: string): string {
   return [iv.toString("hex"), chiffre.toString("hex"), tag.toString("hex")].join(":");
 }
 
-function dechiffrer(valeur: string): string {
+/** Usage serveur uniquement — ne jamais sérialiser le résultat dans une réponse API. */
+export function dechiffrer(valeur: string): string {
   const [ivHex, chiffreHex, tagHex] = valeur.split(":");
   const dechiffreur = createDecipheriv(ALGORITHME, cleChiffrement(), Buffer.from(ivHex, "hex"));
   dechiffreur.setAuthTag(Buffer.from(tagHex, "hex"));
@@ -31,13 +32,4 @@ function dechiffrer(valeur: string): string {
     dechiffreur.final(),
   ]);
   return clair.toString("utf8");
-}
-
-/** Identifiants en clair — usage serveur uniquement, ne jamais sérialiser dans une réponse API. */
-export async function recupererIdentifiantsMikrotik(routeurId: string) {
-  const secret = await prisma.routeurSecret.findUniqueOrThrow({ where: { routeurId } });
-  return {
-    utilisateur: secret.utilisateurApi,
-    motDePasse: dechiffrer(secret.motDePasseChiffre),
-  };
 }

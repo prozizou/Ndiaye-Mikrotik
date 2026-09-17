@@ -1,17 +1,10 @@
 // src/app/(app)/plus/page.tsx
 // Hub des sections secondaires. Presque tout annonce honnêtement "Bientôt"
-// pour l'instant — le gros du produit revient progressivement (voir
-// prisma/schema.prisma) plutôt que d'être reconstruit d'un bloc.
+// pour l'instant — le gros du produit revient progressivement plutôt que
+// d'être reconstruit d'un bloc.
 
 import { utilisateurConnecte } from "@/lib/permissions/permissions";
 import { DeconnexionBouton } from "./deconnexion-bouton";
-
-const LIBELLE_ROLE: Record<string, string> = {
-  SUPER_ADMIN: "Super admin",
-  ADMINISTRATEUR: "Administrateur",
-  TECHNICIEN: "Technicien",
-  CLIENT: "Client",
-};
 
 export default async function PagePlus() {
   const utilisateur = await utilisateurConnecte();
@@ -20,9 +13,7 @@ export default async function PagePlus() {
     <div className="mx-auto max-w-2xl space-y-6 p-4">
       <div>
         <h1 className="font-display text-lg font-semibold tracking-tight">Plus</h1>
-        <p className="text-sm text-ink-muted">
-          {utilisateur.nom} · {LIBELLE_ROLE[utilisateur.role]}
-        </p>
+        <p className="text-sm text-ink-muted">{utilisateur.email}</p>
       </div>
 
       <section className="divide-y divide-border/70 rounded-xl border border-border/70 bg-surface shadow-sm">

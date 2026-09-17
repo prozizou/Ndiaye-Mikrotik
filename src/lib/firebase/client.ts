@@ -1,9 +1,11 @@
 // src/lib/firebase/client.ts
 // Firebase côté navigateur — sert uniquement à obtenir un idToken après
 // connexion. Ce fichier peut être importé dans un composant client.
+// Authentification via Google Sign-In uniquement (voir login/page.tsx) —
+// plus d'email/mot de passe séparé à gérer.
 
 import { initializeApp, getApps } from "firebase/app";
-import { getAuth } from "firebase/auth";
+import { getAuth, GoogleAuthProvider } from "firebase/auth";
 
 const config = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -14,3 +16,4 @@ const config = {
 const app = getApps().length > 0 ? getApps()[0] : initializeApp(config);
 
 export const authClient = getAuth(app);
+export const fournisseurGoogle = new GoogleAuthProvider();

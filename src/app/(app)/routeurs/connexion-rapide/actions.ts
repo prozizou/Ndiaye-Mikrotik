@@ -1,17 +1,15 @@
 // src/app/routeurs/connexion-rapide/actions.ts
 // Seule façon d'ajouter un routeur pour l'instant : IP, utilisateur, mot de
-// passe. Rien d'autre — pas de client, pas de site, pas de diagnostic
-// automatique (reviendra progressivement, voir prisma/schema.prisma).
+// passe. Rien d'autre.
 
 "use server";
 
 import { redirect } from "next/navigation";
-import { prisma } from "@/lib/database/prisma";
-import { exigerRole } from "@/lib/permissions/permissions";
-import { chiffrer } from "@/lib/mikrotik/secrets";
+import { utilisateurConnecte } from "@/lib/permissions/permissions";
+import { creerRouteur } from "@/services/routeur.service";
 
 export async function connexionRapide(formData: FormData) {
-  await exigerRole("SUPER_ADMIN", "ADMINISTRATEUR");
+  await utilisateurConnecte();
 
   const ip = String(formData.get("ip")).trim();
   const utilisateurApi = String(formData.get("utilisateurApi")).trim();
@@ -19,19 +17,7 @@ export async function connexionRapide(formData: FormData) {
   const nomSaisi = String(formData.get("nom") ?? "").trim();
   const nom = nomSaisi.length > 0 ? nomSaisi : ip;
 
-  const routeur = await prisma.$transaction(async (tx) => {
-    const routeurCree = await tx.routeur.create({ data: { nom, ipVpn: ip } });
-
-    await tx.routeurSecret.create({
-      data: {
-        routeurId: routeurCree.id,
-        utilisateurApi,
-        motDePasseChiffre: chiffrer(motDePasseApi),
-      },
-    });
-
-    return routeurCree;
-  });
+  const routeur = await creerRouteur({ nom, ipVpn: ip, utilisateurApi, motDePasseApi });
 
   redirect(`/routeurs/${routeur.id}`);
 }

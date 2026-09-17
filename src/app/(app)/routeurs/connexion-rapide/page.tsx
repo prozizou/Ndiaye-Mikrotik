@@ -1,9 +1,9 @@
 // src/app/routeurs/connexion-rapide/page.tsx
 // Unique porte d'entrée de l'app pour l'instant : IP + identifiant + mot de
 // passe, rien d'autre. Diagnostic et intervention reviendront
-// progressivement (voir prisma/schema.prisma).
+// progressivement.
 
-import { exigerRole, ErreurAcces } from "@/lib/permissions/permissions";
+import { utilisateurConnecte, ErreurAcces } from "@/lib/permissions/permissions";
 import { connexionRapide } from "./actions";
 
 const CHAMP =
@@ -11,7 +11,7 @@ const CHAMP =
 
 export default async function PageConnexionRapide() {
   try {
-    await exigerRole("SUPER_ADMIN", "ADMINISTRATEUR");
+    await utilisateurConnecte();
   } catch (erreur) {
     if (erreur instanceof ErreurAcces) {
       return <p className="p-4 text-sm text-ink-muted">Accès refusé.</p>;
