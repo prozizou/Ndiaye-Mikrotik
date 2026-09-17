@@ -22,22 +22,49 @@ export async function POST(request: Request) {
     // le cookie de session (évite de transformer un token volé en session longue).
     const decoded = await authAdmin.verifyIdToken(idToken);
 
-    // Amorçage : le tout premier compte Firebase à se connecter avec succès
-    // devient Super Admin s'il n'existe encore aucune ligne Utilisateur —
-    // évite de dépendre d'un script de seed à lancer manuellement contre la
-    // vraie base (jamais fait depuis cet environnement, faute d'identifiants
-    // réels). Ne joue qu'une seule fois : dès qu'une ligne existe, ce chemin
-    // ne se déclenche plus jamais, donc personne d'autre ne peut se
-    // promouvoir ainsi par la suite.
-    if ((await prisma.utilisateur.count()) === 0) {
-      await prisma.utilisateur.create({
-        data: {
-          email: decoded.email ?? `${decoded.uid}@sans-email.local`,
-          firebaseUid: decoded.uid,
-          nom: decoded.name ?? decoded.email ?? "Super Admin",
-          role: "SUPER_ADMIN",
-        },
-      });
+    const dejaLie = await prisma.utilisateur.findUnique({
+      where: { firebaseUid: decoded.uid },
+      select: { id: true },
+    });
+
+    if (!dejaLie) {
+      // Deux cas distincts, à ne pas confondre :
+      //
+      // 1. Une ligne existe déjà pour cet email mais avec un firebaseUid
+      //    différent ou absent — reliquat d'avant que ce projet ne soit
+      //    branché sur ce compte Firebase (le compte Firebase a pu être
+      //    recréé, ou la ligne insérée autrement). Firebase a déjà prouvé
+      //    ici que cette personne possède bien cet email (mot de passe
+      //    vérifié) : on relie simplement la ligne existante à ce
+      //    firebaseUid plutôt que de laisser "Compte introuvable" bloquer
+      //    indéfiniment un compte légitime.
+      // 2. Aucune ligne nulle part et la table est encore complètement
+      //    vide : le tout premier compte à se connecter devient Super
+      //    Admin — évite de dépendre d'un script de seed à lancer
+      //    manuellement contre la vraie base (jamais fait depuis cet
+      //    environnement, faute d'identifiants réels). Si la table n'est
+      //    PAS vide et qu'aucune ligne ne correspond à cet email, on ne
+      //    crée rien : un compte Firebase inconnu ne doit jamais se
+      //    donner l'accès tout seul.
+      const parEmail = decoded.email
+        ? await prisma.utilisateur.findUnique({ where: { email: decoded.email }, select: { id: true } })
+        : null;
+
+      if (parEmail) {
+        await prisma.utilisateur.update({
+          where: { id: parEmail.id },
+          data: { firebaseUid: decoded.uid },
+        });
+      } else if ((await prisma.utilisateur.count()) === 0) {
+        await prisma.utilisateur.create({
+          data: {
+            email: decoded.email ?? `${decoded.uid}@sans-email.local`,
+            firebaseUid: decoded.uid,
+            nom: decoded.name ?? decoded.email ?? "Super Admin",
+            role: "SUPER_ADMIN",
+          },
+        });
+      }
     }
 
     const cookieSession = await authAdmin.createSessionCookie(idToken, {
