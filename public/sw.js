@@ -7,9 +7,9 @@
 // est mis en cache est soit statique et versionné par le build (_next/
 // static, icônes), soit la page /offline elle-même.
 //
-// Aucune page "publique" à précacher pour l'instant : pas d'authentification
-// (retirée volontairement, voir historique git), donc pas d'écran de
-// connexion distinct des pages qui montrent des données.
+// /login est la seule page "publique" précachée : c'est un écran de
+// connexion statique (aucune donnée de routeur), donc sûr à garder en
+// cache pour un chargement instantané même hors ligne au premier écran.
 //
 // Ordre des priorités :
 //   1. Requêtes qui modifient l'état (tout sauf GET) → jamais interceptées,
@@ -22,13 +22,14 @@
 //   4. Tout le reste (API, RSC payloads, etc.) → laissé passer nativement,
 //      jamais de cache.
 
-const VERSION = "v9";
+const VERSION = "v10";
 const SHELL_CACHE = `mikroassist-shell-${VERSION}`;
 const STATIC_CACHE = `mikroassist-static-${VERSION}`;
 const CACHES_CONNUS = new Set([SHELL_CACHE, STATIC_CACHE]);
 
 const PRECACHE_URLS = [
   "/offline",
+  "/login",
   "/manifest.webmanifest",
   "/icons/icon-192.png",
   "/icons/icon-512.png",

@@ -4,11 +4,14 @@
 // progressivement.
 
 import { connexionRapide } from "./actions";
+import { exigerUtilisateur } from "@/lib/auth/session";
 
 const CHAMP =
   "w-full border border-border-strong bg-surface px-3 py-2 text-sm text-ink placeholder:text-ink-faint focus:border-brand focus:outline-none";
 
-export default function PageConnexionRapide() {
+export default async function PageConnexionRapide() {
+  await exigerUtilisateur();
+
   return (
     <form action={connexionRapide} className="mx-auto max-w-md space-y-3 p-4">
       <div>

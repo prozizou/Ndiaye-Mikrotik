@@ -6,8 +6,11 @@
 
 import { redirect } from "next/navigation";
 import { creerRouteur } from "@/services/routeur.service";
+import { exigerUtilisateur } from "@/lib/auth/session";
 
 export async function connexionRapide(formData: FormData) {
+  await exigerUtilisateur();
+
   const ip = String(formData.get("ip")).trim();
   const utilisateurApi = String(formData.get("utilisateurApi")).trim();
   const motDePasseApi = String(formData.get("motDePasseApi"));
