@@ -6,6 +6,7 @@
 
 import { NextResponse } from "next/server";
 import { authAdmin } from "@/lib/firebase/admin";
+import { prisma } from "@/lib/database/prisma";
 
 const DUREE_SESSION_MS = 60 * 60 * 24 * 5 * 1000; // 5 jours
 
@@ -19,7 +20,25 @@ export async function POST(request: Request) {
   try {
     // Vérifie que le token est authentique et pas trop vieux avant de créer
     // le cookie de session (évite de transformer un token volé en session longue).
-    await authAdmin.verifyIdToken(idToken);
+    const decoded = await authAdmin.verifyIdToken(idToken);
+
+    // Amorçage : le tout premier compte Firebase à se connecter avec succès
+    // devient Super Admin s'il n'existe encore aucune ligne Utilisateur —
+    // évite de dépendre d'un script de seed à lancer manuellement contre la
+    // vraie base (jamais fait depuis cet environnement, faute d'identifiants
+    // réels). Ne joue qu'une seule fois : dès qu'une ligne existe, ce chemin
+    // ne se déclenche plus jamais, donc personne d'autre ne peut se
+    // promouvoir ainsi par la suite.
+    if ((await prisma.utilisateur.count()) === 0) {
+      await prisma.utilisateur.create({
+        data: {
+          email: decoded.email ?? `${decoded.uid}@sans-email.local`,
+          firebaseUid: decoded.uid,
+          nom: decoded.name ?? decoded.email ?? "Super Admin",
+          role: "SUPER_ADMIN",
+        },
+      });
+    }
 
     const cookieSession = await authAdmin.createSessionCookie(idToken, {
       expiresIn: DUREE_SESSION_MS,
