@@ -2,12 +2,14 @@
 // Service worker de Ndiaye Mikrotik — stratégie "network-first" partout où des
 // données peuvent changer, avec repli hors-ligne. Volontairement PAS un
 // cache générique de type "app shell offline complet" : cette appli affiche
-// des données clients sensibles (tickets, routeurs, journal d'audit) et il
-// n'existe pas encore de bouton de déconnexion qui purgerait le cache — on
-// ne met donc JAMAIS en cache le HTML des pages authentifiées ni les
-// réponses d'API. Ce qui est mis en cache est soit public (page de
-// connexion, page hors-ligne), soit statique et versionné par le build
-// (_next/static, icônes).
+// des données de routeurs (potentiellement sensibles) — on ne met donc
+// JAMAIS en cache le HTML des pages de l'app ni les réponses d'API. Ce qui
+// est mis en cache est soit statique et versionné par le build (_next/
+// static, icônes), soit la page /offline elle-même.
+//
+// Aucune page "publique" à précacher pour l'instant : pas d'authentification
+// (retirée volontairement, voir historique git), donc pas d'écran de
+// connexion distinct des pages qui montrent des données.
 //
 // Ordre des priorités :
 //   1. Requêtes qui modifient l'état (tout sauf GET) → jamais interceptées,
@@ -15,24 +17,18 @@
 //   2. Assets statiques hashés (_next/static, /icons) → cache-first : leur
 //      URL change à chaque build, donc les servir depuis le cache est sûr et
 //      évite un aller-retour réseau inutile.
-//   3. Navigations (documents HTML) → network-first ; seule /login est
-//      persistée en cache pour un repli hors-ligne utile, tout le reste
-//      retombe sur /offline si le réseau est indisponible.
+//   3. Navigations (documents HTML) → network-first ; retombe sur /offline
+//      si le réseau est indisponible.
 //   4. Tout le reste (API, RSC payloads, etc.) → laissé passer nativement,
 //      jamais de cache.
 
-const VERSION = "v8";
+const VERSION = "v9";
 const SHELL_CACHE = `mikroassist-shell-${VERSION}`;
 const STATIC_CACHE = `mikroassist-static-${VERSION}`;
 const CACHES_CONNUS = new Set([SHELL_CACHE, STATIC_CACHE]);
 
-// Pages publiques (sans donnée client) qu'il est sûr de garder en cache
-// pour un repli hors-ligne.
-const ROUTES_PUBLIQUES_CACHEABLES = new Set(["/login"]);
-
 const PRECACHE_URLS = [
   "/offline",
-  "/login",
   "/manifest.webmanifest",
   "/icons/icon-192.png",
   "/icons/icon-512.png",
@@ -100,21 +96,9 @@ async function cacheFirst(request) {
 }
 
 async function networkFirstNavigation(request) {
-  const url = new URL(request.url);
-  const cacheable = ROUTES_PUBLIQUES_CACHEABLES.has(url.pathname);
-
   try {
-    const reponse = await fetch(request);
-    if (cacheable && reponse.ok) {
-      const cache = await caches.open(SHELL_CACHE);
-      cache.put(request, reponse.clone());
-    }
-    return reponse;
+    return await fetch(request);
   } catch {
-    if (cacheable) {
-      const enCache = await caches.match(request);
-      if (enCache) return enCache;
-    }
     const repli = await caches.match("/offline");
     return repli ?? Response.error();
   }

@@ -6,7 +6,6 @@
 // données du parc (routeurs, identifiants) ne sont jamais mises en cache,
 // donc cette page ne peut rien afficher de plus qu'un message.
 
-import Link from "next/link";
 import { NetworkMotif } from "@/components/layout/network-motif";
 import { ReessayerBouton } from "./reessayer-bouton";
 
@@ -33,12 +32,6 @@ export default function PageHorsConnexion() {
 
         <div className="flex justify-center gap-3 pt-2">
           <ReessayerBouton />
-          <Link
-            href="/login"
-            className="border border-border-strong px-3 py-1.5 text-sm text-ink-muted hover:text-ink"
-          >
-            Écran de connexion
-          </Link>
         </div>
       </div>
     </div>

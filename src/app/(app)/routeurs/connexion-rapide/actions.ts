@@ -5,12 +5,9 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { utilisateurConnecte } from "@/lib/permissions/permissions";
 import { creerRouteur } from "@/services/routeur.service";
 
 export async function connexionRapide(formData: FormData) {
-  await utilisateurConnecte();
-
   const ip = String(formData.get("ip")).trim();
   const utilisateurApi = String(formData.get("utilisateurApi")).trim();
   const motDePasseApi = String(formData.get("motDePasseApi"));

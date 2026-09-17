@@ -3,22 +3,12 @@
 // passe, rien d'autre. Diagnostic et intervention reviendront
 // progressivement.
 
-import { utilisateurConnecte, ErreurAcces } from "@/lib/permissions/permissions";
 import { connexionRapide } from "./actions";
 
 const CHAMP =
   "w-full border border-border-strong bg-surface px-3 py-2 text-sm text-ink placeholder:text-ink-faint focus:border-brand focus:outline-none";
 
-export default async function PageConnexionRapide() {
-  try {
-    await utilisateurConnecte();
-  } catch (erreur) {
-    if (erreur instanceof ErreurAcces) {
-      return <p className="p-4 text-sm text-ink-muted">Accès refusé.</p>;
-    }
-    throw erreur;
-  }
-
+export default function PageConnexionRapide() {
   return (
     <form action={connexionRapide} className="mx-auto max-w-md space-y-3 p-4">
       <div>

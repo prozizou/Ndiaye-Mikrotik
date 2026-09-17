@@ -1,12 +1,10 @@
 // src/lib/firebase/admin.ts
-// Firebase Admin — utilisé uniquement côté serveur (Node runtime), jamais
-// dans le middleware (incompatible edge) ni envoyé au navigateur.
-// authAdmin : vérifie les sessions (Firebase Auth).
-// dbAdmin   : lit/écrit les données de l'app (Firebase Realtime Database) —
-// remplace Postgres/Prisma, retiré pour ne dépendre que de Firebase.
+// Firebase Admin — utilisé uniquement côté serveur (Node runtime).
+// Donne accès à la Realtime Database (données de l'app). Toute
+// authentification a été retirée pour l'instant (voir historique git) —
+// ce module ne sert donc plus qu'à ça, plus de vérification de session ici.
 
 import { initializeApp, getApps, cert, type App } from "firebase-admin/app";
-import { getAuth } from "firebase-admin/auth";
 import { getDatabase } from "firebase-admin/database";
 
 function initFirebaseAdmin(): App {
@@ -26,5 +24,4 @@ function initFirebaseAdmin(): App {
 
 const app = initFirebaseAdmin();
 
-export const authAdmin = getAuth(app);
 export const dbAdmin = getDatabase(app);
