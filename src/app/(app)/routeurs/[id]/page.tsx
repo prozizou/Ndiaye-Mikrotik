@@ -1,16 +1,16 @@
 // src/app/routeurs/[id]/page.tsx
 // Fiche minimale : ce que le routeur est (nom, IP), rien de plus pour
 // l'instant. Diagnostic, intervention, historique, etc. reviendront
-// progressivement (voir prisma/schema.prisma).
+// progressivement.
 
 import { notFound } from "next/navigation";
-import { prisma } from "@/lib/database/prisma";
 import { utilisateurConnecte } from "@/lib/permissions/permissions";
+import { obtenirRouteur } from "@/services/routeur.service";
 
 export default async function PageDetailRouteur({ params }: { params: { id: string } }) {
   await utilisateurConnecte();
 
-  const routeur = await prisma.routeur.findUnique({ where: { id: params.id } });
+  const routeur = await obtenirRouteur(params.id);
   if (!routeur) notFound();
 
   return (
@@ -19,7 +19,7 @@ export default async function PageDetailRouteur({ params }: { params: { id: stri
 
       <div className="grid grid-cols-2 gap-4 rounded-xl border border-border/70 bg-surface p-4 text-sm shadow-sm">
         <Champ label="IP VPN" valeur={routeur.ipVpn} mono />
-        <Champ label="Ajouté le" valeur={routeur.creeLe.toLocaleString("fr-FR")} />
+        <Champ label="Ajouté le" valeur={new Date(routeur.creeLe).toLocaleString("fr-FR")} />
       </div>
     </div>
   );
