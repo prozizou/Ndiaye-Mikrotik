@@ -92,6 +92,36 @@ body {
   animation: shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
 }
 
+/* Transition entre les 2 étapes de connexion — une seule étape est montée
+   à la fois (rendu conditionnel dans login-flow.tsx), ceci ne fait
+   qu'animer l'entrée du panneau qui vient d'apparaître. */
+@keyframes step-in-avant {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@keyframes step-in-arriere {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+.animate-step-in-avant {
+  animation: step-in-avant 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.animate-step-in-arriere {
+  animation: step-in-arriere 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
 @keyframes plug-in {
   0% {
     transform: translateX(-96px) rotate(-5deg);
