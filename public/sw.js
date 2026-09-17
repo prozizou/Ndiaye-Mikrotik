@@ -22,7 +22,7 @@
 //   4. Tout le reste (API, RSC payloads, etc.) → laissé passer nativement,
 //      jamais de cache.
 
-const VERSION = "v10";
+const VERSION = "v11";
 const SHELL_CACHE = `mikroassist-shell-${VERSION}`;
 const STATIC_CACHE = `mikroassist-static-${VERSION}`;
 const CACHES_CONNUS = new Set([SHELL_CACHE, STATIC_CACHE]);
