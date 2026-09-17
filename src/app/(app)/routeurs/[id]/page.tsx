@@ -5,8 +5,10 @@
 
 import { notFound } from "next/navigation";
 import { obtenirRouteur } from "@/services/routeur.service";
+import { exigerUtilisateur } from "@/lib/auth/session";
 
 export default async function PageDetailRouteur({ params }: { params: { id: string } }) {
+  await exigerUtilisateur();
   const routeur = await obtenirRouteur(params.id);
   if (!routeur) notFound();
 

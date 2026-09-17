@@ -49,3 +49,103 @@ body {
   outline: 2px solid var(--color-brand);
   outline-offset: 2px;
 }
+
+/* Écran de connexion (src/app/login) — micro-animations, aucune
+   dépendance externe. */
+
+@keyframes blob {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(24px, -28px) scale(1.08);
+  }
+  66% {
+    transform: translate(-18px, 16px) scale(0.94);
+  }
+}
+.animate-blob {
+  animation: blob 14s ease-in-out infinite;
+}
+
+@keyframes shake {
+  10%,
+  90% {
+    transform: translateX(-1px);
+  }
+  20%,
+  80% {
+    transform: translateX(2px);
+  }
+  30%,
+  50%,
+  70% {
+    transform: translateX(-4px);
+  }
+  40%,
+  60% {
+    transform: translateX(4px);
+  }
+}
+.animate-shake {
+  animation: shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+@keyframes plug-in {
+  0% {
+    transform: translateX(-96px) rotate(-5deg);
+    opacity: 0;
+  }
+  60% {
+    transform: translateX(-4px) rotate(-5deg);
+    opacity: 1;
+  }
+  80% {
+    transform: translateX(3px) rotate(-1deg);
+  }
+  100% {
+    transform: translateX(0) rotate(0deg);
+  }
+}
+.animate-plug-in {
+  animation: plug-in 1.1s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes plug-spark {
+  0%,
+  55% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  68% {
+    opacity: 0.6;
+    transform: scale(1.5);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.8);
+  }
+}
+.animate-plug-spark {
+  animation: plug-spark 1.1s ease-out both;
+}
+
+@keyframes plug-check {
+  0%,
+  65% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  80% {
+    opacity: 1;
+    transform: scale(1.12);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.animate-plug-check {
+  animation: plug-check 1.1s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
