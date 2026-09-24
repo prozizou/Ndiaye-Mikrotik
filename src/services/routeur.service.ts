@@ -1,9 +1,11 @@
 // src/services/routeur.service.ts
 // Accès RTDB pour les routeurs — remplace prisma.routeur / prisma.routeurSecret.
-// Deux nœuds séparés dans Firebase Realtime Database :
-//   /routeurs/{id}        : { nom, ipVpn, creeLe }        — lisible tel quel
-//   /routeurSecrets/{id}  : { utilisateurApi, motDePasseChiffre } — jamais
-//                            renvoyé à une fonction qui répond au navigateur
+// Trois nœuds séparés dans Firebase Realtime Database :
+//   /routeurs/{id}            : { nom, ipVpn, creeLe }        — lisible tel quel
+//   /routeurSecrets/{id}      : { utilisateurApi, motDePasseChiffre } — jamais
+//                                renvoyé à une fonction qui répond au navigateur
+//   /routeurSupervision/{id}  : dernier résultat du contrôle périodique
+//                                (voir src/app/api/cron/supervision/route.ts)
 //
 // RTDB n'a pas de contrainte d'unicité native (contrairement à ipVpn @unique
 // sous Prisma) : creerRouteur() vérifie l'absence de doublon avant d'écrire.
@@ -19,6 +21,10 @@ export type Routeur = {
   ipVpn: string;
   creeLe: number;
 };
+
+export type Supervision =
+  | { ok: true; verifieLe: number; version: string; tempsActivite: string }
+  | { ok: false; verifieLe: number; erreur: string };
 
 export async function listerRouteurs(): Promise<Routeur[]> {
   const snap = await dbAdmin.ref("routeurs").get();
@@ -72,4 +78,13 @@ export async function recupererIdentifiantsMikrotik(routeurId: string) {
     utilisateur: secret.utilisateurApi,
     motDePasse: dechiffrer(secret.motDePasseChiffre),
   };
+}
+
+export async function enregistrerSupervision(routeurId: string, resultat: Supervision): Promise<void> {
+  await dbAdmin.ref(`routeurSupervision/${routeurId}`).set(resultat);
+}
+
+export async function obtenirSupervision(routeurId: string): Promise<Supervision | null> {
+  const snap = await dbAdmin.ref(`routeurSupervision/${routeurId}`).get();
+  return snap.exists() ? (snap.val() as Supervision) : null;
 }
