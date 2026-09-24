@@ -5,7 +5,7 @@
 // historique, etc. reviendront progressivement.
 
 import { notFound } from "next/navigation";
-import { obtenirRouteur } from "@/services/routeur.service";
+import { obtenirRouteur, obtenirSupervision } from "@/services/routeur.service";
 import { exigerUtilisateur } from "@/lib/auth/session";
 import { TesterConnexionBouton } from "./tester-connexion";
 
@@ -13,6 +13,7 @@ export default async function PageDetailRouteur({ params }: { params: { id: stri
   await exigerUtilisateur();
   const routeur = await obtenirRouteur(params.id);
   if (!routeur) notFound();
+  const supervision = await obtenirSupervision(routeur.id);
 
   return (
     <div className="mx-auto max-w-2xl space-y-6 p-4">
@@ -22,6 +23,25 @@ export default async function PageDetailRouteur({ params }: { params: { id: stri
         <Champ label="IP VPN" valeur={routeur.ipVpn} mono />
         <Champ label="Ajouté le" valeur={new Date(routeur.creeLe).toLocaleString("fr-FR")} />
       </div>
+
+      {supervision && (
+        <div
+          className={`rounded-xl border p-3 text-sm ${
+            supervision.ok ? "border-signal/30 bg-signal/10" : "border-critical/30 bg-critical/10"
+          }`}
+        >
+          <div className={`font-medium ${supervision.ok ? "text-signal" : "text-critical"}`}>
+            {supervision.ok ? "Contrôle automatique OK" : "Contrôle automatique en échec"}
+          </div>
+          <div className="mt-1 text-xs text-ink-muted">
+            {supervision.ok
+              ? `RouterOS ${supervision.version} — actif depuis ${supervision.tempsActivite}`
+              : supervision.erreur}
+            {" — "}
+            {new Date(supervision.verifieLe).toLocaleString("fr-FR")}
+          </div>
+        </div>
+      )}
 
       <TesterConnexionBouton routeurId={routeur.id} />
     </div>
