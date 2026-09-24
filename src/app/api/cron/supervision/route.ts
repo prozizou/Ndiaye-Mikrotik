@@ -12,6 +12,10 @@
 //
 // Non protégée par src/middleware.ts (son matcher ne couvre pas /api) — la
 // vérification du secret ci-dessous est la seule barrière, c'est voulu.
+//
+// Accepte GET et POST : les services de cron externes (cron-job.org compris)
+// n'envoient pas tous la même méthode par défaut selon la configuration du
+// job — la logique est identique quelle que soit la méthode utilisée.
 
 import { NextRequest, NextResponse } from "next/server";
 import {
@@ -21,7 +25,7 @@ import {
 } from "@/services/routeur.service";
 import { appelerMikrotik, ErreurMikrotik } from "@/lib/mikrotik/client";
 
-export async function GET(request: NextRequest) {
+async function executerSupervision(request: NextRequest) {
   const secretAttendu = process.env.CRON_SECRET;
   if (!secretAttendu) {
     return NextResponse.json({ erreur: "CRON_SECRET non configuré côté serveur" }, { status: 500 });
@@ -59,3 +63,6 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json({ ok: true, routeursVerifies: routeurs.length });
 }
+
+export const GET = executerSupervision;
+export const POST = executerSupervision;
